@@ -31,8 +31,8 @@ skynet.start(function()
         host = '127.0.0.1',
         port = 3306,
         database = 'test',
-        user = 'ubuntu',
-        password = 'diealone,,.',
+        user = 'jinlinbi',
+        password = 'password',
         max_packet_size = 1024 * 1024,
         on_connect = on_connect
     })

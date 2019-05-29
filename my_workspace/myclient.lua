@@ -69,8 +69,8 @@ local hmac = crypt.hmac64(challenge, secret)
 writeline(fd, crypt.base64encode(hmac))
 local token = {
     server = "sample",
-    user = "hello",
-    pass = "test",
+    user = "jinlinbi",
+    pass = "password",
 }
 
 
@@ -97,3 +97,63 @@ socket.close(fd)
 local subid = crypt.base64decode(string.sub(result, 5))
 
 print("login ok, subid = ", subid)
+
+
+local function send_request(v, session)
+    local size = #v + 4
+    local package = string.pack(">I2", size) .. v .. string.pack(">I4", session)
+    socket.send(fd, package)
+    return v, session
+end
+
+
+local function recv_response(v)
+    local size = #v - 5
+    local content, ok, session = string.unpack("c" .. tostring(size) .. "B>I4", v)
+    return ok ~=0, content, session
+end
+
+
+local function unpack_package(text)
+    local size = #text
+    if size < 2 then
+        return nil, text
+    end
+    
+    local s = text:byte(1) * 256 + text:byte(2)
+    if size < s + 2 then
+        return nil, text    
+    end
+
+    return text:sub(3, 2 + s), text:sub(3 + s)
+end
+
+
+local readpackage = unpack_f(unpack_package)
+local function send_package(fd, pack)
+    local package = string.pack(">s2", pack)
+    socket.send(fd, package)
+end
+
+
+local text = "echo"
+local index = 1
+
+print("connect")
+
+fd = assert(socket.connect("127.0.0.1", 8002))
+last = ""
+
+local handshake = string.format("%s@%s#%s:%d", crypt.base64encode(token.user),
+                                               crypt.base64encode(token.server),
+                                               crypt.base64encode(subid),index)
+
+local hmac = crypt.hmac64(crypt.hashkey(handshake), secret)
+send_package(fd, handshake .. ":" .. crypt.base64encode(hmac))
+
+
+print(readpackage())
+print("===>", send_request(text, 0))
+print("<===", recv_response(readpackage()))
+print("disconnect")
+socket.close(fd)
