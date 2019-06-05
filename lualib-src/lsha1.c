@@ -265,8 +265,8 @@ lsha1(lua_State *L) {
 static inline void
 xor_key(uint8_t key[BLOCKSIZE], uint32_t xor) {
 	int i;
-	for (i=0;i<BLOCKSIZE;i+=sizeof(uint32_t)) {
-		uint32_t * k = (uint32_t *)&key[i];
+	for (i = 0; i < BLOCKSIZE; i += sizeof(uint32_t)) {
+		uint32_t * k = (uint32_t *) &key[i];
 		*k ^= xor;
 	}
 }

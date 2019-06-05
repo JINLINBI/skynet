@@ -32,6 +32,27 @@ set 3 {
 
 quit 4 {}
 
+login 5 {
+	request {
+		name 0: string
+		password 1 : string
+	}
+	response {
+		result 0 : string
+	}
+}
+
+register 6 {
+	request {
+		name 0: string
+		password 1: string
+	}
+	response {
+		result 0: integer
+		msg 1: string
+	}
+}
+
 ]]
 
 proto.s2c = sprotoparser.parse [[

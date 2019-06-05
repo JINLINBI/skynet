@@ -12,8 +12,8 @@ local sproto = require "sproto"
 local host = sproto.new(proto.s2c):host "package"
 local request = host:attach(sproto.new(proto.c2s))
 
-local fd = assert(socket.connect("106.12.114.26", 8888))
---local fd = assert(socket.connect("127.0.0.1", 8888))
+--local fd = assert(socket.connect("106.12.114.26", 60001))
+local fd = assert(socket.connect("127.0.0.1", 8888))
 
 local function send_package(fd, pack)
 	local package = string.pack(">s2", pack)
@@ -105,12 +105,18 @@ while true do
 	dispatch_package()
 	local cmd = socket.readstdin()
 	if cmd then
-		if cmd == "quit" then
+		local args = {}
+		for value in string.gmatch(cmd, "[%w,.]+") do
+			table.insert(args, value)
+		end
+		if args[1] == "quit" then
 			send_request("quit")
-		else
-			send_request("get", { what = cmd })
+		elseif args[1] == "login" then
+			send_request("login", { name = args[2], password = args[3]})
+		elseif args[1] == "register" then
+			send_request("register", { name = args[2], password = args[3] })
 		end
 	else
-		socket.usleep(100)
+		socket.usleep(1000)
 	end
 end
