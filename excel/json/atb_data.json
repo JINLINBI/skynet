@@ -1,0 +1,12 @@
+﻿{
+    "fields": [
+        {"name": "id", "type": "number"},
+        {"name": "text", "type": "string"},
+        {"name": "parents", "type": "int[]"},
+        {"name": "maxNode", "type": "float"}
+    ],
+    "files": [
+        "atb/atb_data_cmn",
+        "atb/atb_data_player"
+    ]
+}

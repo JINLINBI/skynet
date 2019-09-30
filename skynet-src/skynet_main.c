@@ -157,6 +157,8 @@ main(int argc, char *argv[]) {
 	config.logger = optstring("logger", NULL);
 	config.logservice = optstring("logservice", "logger");
 	config.profile = optboolean("profile", 1);
+	config.excel = optstring("excel", "./excel");
+	config.excelservice = optstring("excelservice", "excel");
 
 	lua_close(L);
 

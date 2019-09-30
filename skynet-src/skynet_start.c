@@ -266,6 +266,14 @@ skynet_start(struct skynet_config * config) {
 	skynet_socket_init();
 	skynet_profile_enable(config->profile);
 
+	struct skynet_context *excel_ctx = skynet_context_new(config->excelservice, config->excel);
+	if (excel_ctx == NULL) {
+		fprintf(stderr, "Can't init %s service\n", config->excelservice);
+		exit(1);
+	}
+
+	skynet_handle_namehandle(skynet_context_handle(excel_ctx), "excel");
+
 	struct skynet_context *ctx = skynet_context_new(config->logservice, config->logger);
 	if (ctx == NULL) {
 		fprintf(stderr, "Can't launch %s service\n", config->logservice);
@@ -275,6 +283,8 @@ skynet_start(struct skynet_config * config) {
 	skynet_handle_namehandle(skynet_context_handle(ctx), "logger");
 
 	bootstrap(ctx, config->bootstrap);
+
+	
 
 	start(config->thread);
 
