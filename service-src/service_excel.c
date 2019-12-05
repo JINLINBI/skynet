@@ -75,18 +75,22 @@ unsigned long get_file_size(const char *path)
 void* read_file(char* filename){
 	int length = get_file_size(filename);
 	if (length <= 0){
+		printf("file length is 0");
 		return NULL;
 	}
 
 	int file = open(filename, O_RDONLY);
 	char* data = skynet_malloc(length);
 
-	memset(data, 0, length);
+	memset(data, 0, length + 1);
 
 	int ret = read(file, data, length);
-	if (ret < 0)
+	if (ret < 0){
+		printf("read file failed.");
 		return NULL;
-
+	}
+		
+	printf("returning %s file data.\n", filename);
 	return (void*)data;
 }
 
@@ -184,56 +188,55 @@ excel_init(struct excel * inst, struct skynet_context *ctx, const char * excel_p
 
 	skynet_command(ctx, "REG", NULL);
 	if (excel_path) {
-		char* s[100];
-		int i = 0, n = 1;
-		s[0] = skynet_malloc(50);
-		memset(s[0], 0, 50);
-		sprintf(s[0], "%s/json", excel_path);
+		char files_dir[256] = {0};
+		sprintf(files_dir, "%s/json", excel_path);
 
-		// 扫描json规则配置文件
-		do{
-			dir = opendir(s[i]);		// 打开指定路径
-			if (dir != NULL){
-				while ((dirt = readdir(dir)) != NULL){     // 存储路径下的所有文件和文件夹路径
-					if (strcmp(dirt->d_name, ".") == 0 || strcmp(dirt->d_name, "..") == 0 || strcmp(dirt->d_name, "json") == 0)
-						continue;
-					s[n] = skynet_malloc(50);
-					memset(s[n], 0, 50);
-					sprintf(s[n], "%s/%s", s[i], dirt->d_name);
-					n++;
-				}
+		dir = opendir(files_dir);		// 打开json文件夹
+		cJSON* json_files = cJSON_CreateArray();
+		if (dir != NULL){
+			while ((dirt = readdir(dir)) != NULL){
+				if (strcmp(dirt->d_name, ".") == 0 || strcmp(dirt->d_name, "..") == 0 || strcmp(dirt->d_name, "json") == 0)
+					continue;
+				char temp[256];
+				sscanf(dirt->d_name, "%[^.]", temp);
+				printf("temp is %s\n", temp);
+				cJSON_AddItemToArray(json_files, cJSON_CreateString(temp));
 			}
-
-			i++;
-		} while (i < n);
+		}
 
 
 		// 广度优先遍历文件夹,开始解析json文件
 		cJSON * json_file = NULL;
 		char excel_path_name[128];
-		for (i = 1; i < n; i++){
-			char* data = (char*)read_file(s[i]);
+		for (int i = 0; i < cJSON_GetArraySize(json_files); i++){
+			cJSON* array_file_name = cJSON_GetArrayItem(json_files, i);
+			sprintf(files_dir, "%s/json/%s.json", excel_path, array_file_name->valuestring);
+			printf("%s \n", files_dir);
+			char* data = (char*)read_file(files_dir);
+			printf("%s\n", data);
 			json_file = cJSON_Parse(data);
 			skynet_free(data);
 
+			if (cJSON_IsNull(json_file) || cJSON_IsInvalid(json_file)){
+				printf("\e[0;31m %s file might has mistakes.\e[0m\n", files_dir);
 
+			}
 			cJSON * files = cJSON_GetObjectItem(json_file, "files");
 			cJSON * fields = cJSON_GetObjectItem(json_file, "fields");
 
-			// printf("\e[0;32m%s\e[0m", cJSON_Print(json_file));
-			// printf("\e[0;31m%s \e[0m\n", cJSON_GetArrayItem(cJSON_GetObjectItem(json_file, "files"), 0)->valuestring);
-
 			// 遍历json规则对应下的所有excel文件
 			int file_count = cJSON_GetArraySize(files);
+			printf("%s file count is %d\n", array_file_name->valuestring, file_count);
 			char* excel_filename;
 			cJSON* ret = NULL;
 			for (int i = 0; i < file_count; i++){
 				excel_filename = cJSON_GetArrayItem(files, i)->valuestring;
 				if (excel_filename == NULL){
-					printf("parse json(%s) files(%s) failed...", s[i], excel_filename);
+					printf("parse json(%s) files(%s) failed...", array_file_name->valuestring, excel_filename);
 					continue;
 				}
 				snprintf(excel_path_name, 256, "%s/%s.txt", excel_path, excel_filename);
+				printf("parsing excel file: %s\n", excel_path_name);
 
 				ret = parse_excel(excel_path_name, fields, ret);
 				if ( ret == NULL || cJSON_IsNull(ret)){
@@ -244,19 +247,18 @@ excel_init(struct excel * inst, struct skynet_context *ctx, const char * excel_p
 				}
 			}
 
-			char json_name[128];
 			cJSON* file_item = cJSON_CreateObject();
-			cJSON_AddItemToObject(inst->excel_root, s[i], file_item);
+			cJSON_AddItemToObject(inst->excel_root, array_file_name->valuestring, file_item);
 			cJSON_AddItemReferenceToObject(file_item, "fields", fields);
 			cJSON_AddItemReferenceToObject(file_item, "data", ret);
+			
+			cJSON_DetachItemFromObject(json_file, "fields");
 			cJSON_Delete(json_file);
 		}
 
 		printf("%s \n", cJSON_Print(inst->excel_root));
 		closedir(dir);
-		while (n--){
-			skynet_free(s[n]);
-		}
+		cJSON_Delete(json_files);
 	}
 
 	skynet_callback(ctx, inst, excel_cb);

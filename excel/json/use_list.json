@@ -1,0 +1,12 @@
+﻿{
+    "fields": [
+        {"name": "id", "type": "number"},
+        {"name": "name", "type": "string"},
+        {"name": "type", "type": "number"},
+        {"name": "career", "type": "int[]"},
+        {"name": "life", "type": "number"}
+    ],
+    "files": [
+        "item/item_list"
+    ]
+}
