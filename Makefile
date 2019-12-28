@@ -122,14 +122,14 @@ $(LUA_CLIB_PATH)/client.so : lualib-src/lua-clientsocket.c lualib-src/lua-crypt.
 $(LUA_CLIB_PATH)/excel.so : lualib-src/lua-excel.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src -I$(CJSON_INC) $(CJSON) $^ -o $@ -lpthread
 
+$(LUA_CLIB_PATH)/pieces.so : lualib-src/lua-pieces.c | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src $^ -o $@ 
+
 $(LUA_CLIB_PATH)/sproto.so : lualib-src/sproto/sproto.c lualib-src/sproto/lsproto.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -Ilualib-src/sproto $^ -o $@ 
 
 $(LUA_CLIB_PATH)/lpeg.so : 3rd/lpeg/lpcap.c 3rd/lpeg/lpcode.c 3rd/lpeg/lpprint.c 3rd/lpeg/lptree.c 3rd/lpeg/lpvm.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lpeg $^ -o $@ 
-
-$(LUA_CLIB_PATH)/pieces.so : lualib-src/lua-pieces.cpp | $(LUA_CLIB_PATH)
-	$(CPP) $(CPPFLAGS) $(SHARED) -Iskynet-src -Ilualib-src $^ -o $@ 
 
 # cpp so
 # $(LUA_CPPLIB_PATH)/pieces.so : | $(LUA_CPPLIB_PATH)

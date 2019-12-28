@@ -94,6 +94,8 @@ void* read_file(char* filename){
 	return (void*)data;
 }
 
+
+// 单个配置文件解析，返回解析的cjson结构信息
 cJSON* parse_excel(char * excel, cJSON * conf, cJSON * last){
 	if (conf == NULL || cJSON_IsInvalid(conf) || excel == NULL){
 		return NULL;
