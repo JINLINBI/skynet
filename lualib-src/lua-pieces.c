@@ -95,38 +95,39 @@ static void stack_dump(lua_State* L){
 	printf(">>>>>>> returning ...\n");
 };
 
-
-
-static int id_func(lua_State * L) { 
-	stack_dump(L);
-	struct pieces * pi = (struct  pieces*) lua_touserdata(L, -1);
-	if (pi == NULL) {
-		printf("pi == NULL, get userdata type error.");
+int set_pieces_flag(lua_State * L, const char* name, pieces * pi) {
+	if (strcmp(name, "onlyId") == 0) {
+		lua_pushinteger(L, pi->flags.onlyId);
+	}
+	else {
+		lua_pushnil(L);
 	}
 
-	lua_pushinteger(L, pi->flags.onlyId);
-
-	//stack_dump(L);
-	//luaL_error(L, ".................................");
 	return 1;
 }
 
 static int pieces_func(lua_State * L) {
-	printf("in pieces func start;\n");
+	const char* index_name = lua_tostring(L, -1);
+	lua_getfield(L, 1, "pieces_userdata");
+	pieces * pi = (pieces*) lua_touserdata(L, -1);
 	stack_dump(L);
-	lua_newtable(L);
-	lua_pushstring(L, "onlyId");
-	lua_pushnumber(L, 12341234);
-	lua_settable(L, 1);
-	stack_dump(L);
+	if (pi == NULL) {
+		printf("going here");
+		lua_pushnil(L);
+		return 0;
+	}
 
-	printf("in pieces func end;\n");
+	set_pieces_flag(L, index_name, pi);
 
-	return 0;
+
+	// test
+	// lua_pop(L, 1);
+
+	return 1;
 }
 
 static luaL_Reg arrayFunc [] = {
-	//{"__index", pieces_func},
+	{"__index", pieces_func},
 	// {"__pairs", excel_pairs},
 	// {"__len", excel_len},
 	// {"onlyId", id_func},
@@ -139,22 +140,24 @@ int InitMetaTable(lua_State *L){
 	return 1;
 }
 
-#define pieces_setflag(index, name, value) \
-	lua_pushnumber(L, value);\
+#define pieces_setflag(index, name, value)\
+	lua_pushinteger(L, value);\
 	lua_setfield(L, index, name);
 
 static int new_pieces(lua_State* L) {
 	stack_dump(L);
-	printf("pieces new:>>>>>>>>>>>>>>>\n");
-	pieces * p = (pieces*)lua_newuserdata(L, sizeof(pieces));
-	memset(p, 0, sizeof(*p));
-	p->flags.flag.born_time = time(NULL) - build_time;
+	pieces * pi = (pieces*) lua_newuserdata(L, sizeof(pieces));
+	memset(pi, 0, sizeof(*pi));
+	pi->flags.flag.born_time = time(NULL) - build_time;
 
 	InitMetaTable(L);
 	luaL_getmetatable(L, "pieces_meta");
+	lua_pushlightuserdata(L, pi);
+	lua_setfield(L, -2, "pieces_userdata");
 	lua_setmetatable(L, -2);
+	
 
-	pieces_setflag(-2, "onlyId", 123432423);
+	pieces_setflag(-2, "Id", 123432423);
 
 	return 1;
 }
