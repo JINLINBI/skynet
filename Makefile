@@ -51,8 +51,8 @@ all : cjson
 CJSON_STATICLIB := 3rd/cJSON/build/libcjson.so
 CJSON_INC := 3rd/cJSON
 CJSON := 3rd/cJSON/cJSON.c
-$(CJSON_STATICLIB) :
-	mkdir 3rd/cJSON/build && cd 3rd/cJSON/build && cmake .. && make
+# $(CJSON_STATICLIB) :
+# 	mkdir 3rd/cJSON/build && cd 3rd/cJSON/build && cmake .. && make
 
 cjson : $(CJSON_STATICLIB)
 
