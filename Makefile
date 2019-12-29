@@ -54,7 +54,7 @@ CJSON := 3rd/cJSON/cJSON.c
 # $(CJSON_STATICLIB) :
 # 	mkdir 3rd/cJSON/build && cd 3rd/cJSON/build && cmake .. && make
 
-cjson : $(CJSON_STATICLIB)
+# cjson : $(CJSON_STATICLIB)
 
 # skynet
 
