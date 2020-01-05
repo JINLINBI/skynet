@@ -11,6 +11,7 @@
 #include <locale.h>
 #include <wchar.h>
 #include <cJSON.h>
+#include <unistd.h>
 
 struct excel {
 	FILE * handle;
@@ -115,28 +116,22 @@ cJSON* parse_excel(char * excel, cJSON * conf, cJSON * last){
 
 	// 获取excel文件共有多少列
 	int col_count = cJSON_GetArraySize(conf);
-	printf("col_count is %d\n", col_count);
 	
 	// 开始解析excel表格
 	read = getline(&line, &len, fp);	// feed first line
 	while((read = getline(&line, &len, fp)) != -1){
-		//printf("retrieved line of length %zu: \n", read);
-		//printf("\e[0;32mget line: %s\e[0m\n", line);
-		
 		cJSON * line_item = cJSON_CreateArray();
 		cJSON * item;
 		char *type;
 		int col_index = 0;
 		char * token = strtok(line, "\t");
 		while (token != NULL){
-			// name = cJSON_GetObjectItem(cJSON_GetArrayItem(conf, col_index), "name")->valuestring;
-			
 			type = cJSON_GetObjectItem(cJSON_GetArrayItem(conf, col_index), "type")->valuestring;
 			if (!strcmp(type, "string")){
 				item = cJSON_CreateString(token);
 			}
 			else if (!strcmp(type, "number")){
-				item = cJSON_CreateNumber(strtoull(token, NULL, 10));
+				item = cJSON_CreateNumber(strtoll(token, NULL, 10));
 			}
 			else if (!strcmp(type, "float")){
 				item = cJSON_CreateNumber(strtof(token, NULL));
@@ -148,7 +143,7 @@ cJSON* parse_excel(char * excel, cJSON * conf, cJSON * last){
 				char * t;
 				for (t = strsep(&tmp, "*"); t != NULL; t = strsep(&tmp, "*")){
 					// while (t != NULL){
-					cJSON_AddItemToArray(item, cJSON_CreateNumber(strtoull(t, NULL, 10)));
+					cJSON_AddItemToArray(item, cJSON_CreateNumber(strtoll(t, NULL, 10)));
 				}
 				skynet_free(tmp);
 			}
@@ -213,14 +208,12 @@ excel_init(struct excel * inst, struct skynet_context *ctx, const char * excel_p
 		for (int i = 0; i < cJSON_GetArraySize(json_files); i++){
 			cJSON* array_file_name = cJSON_GetArrayItem(json_files, i);
 			sprintf(files_dir, "%s/json/%s.json", excel_path, array_file_name->valuestring);
-			printf("%s \n", files_dir);
 			char* data = (char*)read_file(files_dir);
-			printf("%s\n", data);
 			json_file = cJSON_Parse(data);
 			skynet_free(data);
 
 			if (cJSON_IsNull(json_file) || cJSON_IsInvalid(json_file)){
-				printf("\e[0;31m %s file might has mistakes.\e[0m\n", files_dir);
+				printf("\e[0;31m %s file might has errors.\e[0m\n", files_dir);
 
 			}
 			cJSON * files = cJSON_GetObjectItem(json_file, "files");

@@ -14,32 +14,74 @@
 #include "cJSON.h"
 
 #define data_length 128
-struct excel{
+typedef struct excel{
 	cJSON * data;
-};
+} excel;
 
-struct excel_data{
-	cJSON *fields;
-	cJSON *data;
-	char *name;
+typedef struct excel_list {
 	int size;
-	int index;
-};
+	char * name;
+	cJSON * data;
+	cJSON * fields;
+} excel_list;
 
-struct excel_service {
+typedef struct excel_line {
+	int id;
+	int size;
+	cJSON * line_data;
+	cJSON * line_fields;
+} excel_line;
+
+typedef struct excel_service {
 	FILE * handle;
 	char * filename;
 	int close;
 	cJSON* excel_root;
-};
+} excel_service;
 
-struct skynet_context {
+typedef struct skynet_context {
 	void * instance;
+} skynet_context;
+
+
+static int excel_list_index(lua_State* L);
+static int excel_list_pairs(lua_State* L);
+static int excel_list_len(lua_State* L);
+
+static int excel_line_index(lua_State* L);
+static int excel_line_pairs(lua_State* L);
+static int excel_line_len(lua_State* L);
+static int excel_line_tostring(lua_State* L);
+
+static luaL_Reg excel_list_func [] = {
+	{"__index", excel_list_index},
+	{"__pairs", excel_list_pairs},
+	{"__len", excel_list_len},
+	{NULL, NULL}
 };
 
+static luaL_Reg excel_line_func [] = {
+	{"__index", excel_line_index},
+	{"__pairs", excel_line_pairs},
+	{"__len", excel_line_len},
+	{"__tostring", excel_line_tostring},
+	{NULL, NULL}
+};
+
+int InitExcelListMetaTable(lua_State *L){
+	luaL_newmetatable(L, "excel_list_meta");
+	luaL_setfuncs(L, excel_list_func, 0);
+	return 1;
+}
+
+int InitExcelLineMetaTable(lua_State *L){
+	luaL_newmetatable(L, "excel_line_meta");
+	luaL_setfuncs(L, excel_line_func, 0);
+	return 1;
+}
 
 
-static int excel_index(lua_State* L);
+
 static void stack_dump(lua_State* L){
 	int top = lua_gettop(L);
 	for (int i = 1; i <= top; i++){
@@ -69,150 +111,193 @@ static void stack_dump(lua_State* L){
 	printf(">>>>>>>\n");
 };
 
+/////////////////////////////////////////////////////////////
+//  excel_list : start
+/////////////////////////////////////////////////////////////
 
-static int excel_pairs_inner(lua_State * L){
-	return 0;
-}
+static int inner_excel_list_pairs(lua_State * L){
+	excel_list * data = (excel_list *) lua_touserdata(L, lua_upvalueindex(1));
+	uint32_t data_size = data->size;
 
+	// char* data = lua_tostring(L, L);
 
-static int _excel_pairs(lua_State * L){
-	struct excel_data * data = (struct excel_data *) lua_touserdata(L, lua_upvalueindex(1));
-	
-	int index = 0;
-	char* s_index;
-
-	lua_pushnumber(L, 1);
-	lua_pushnumber(L, 2);
-
-
-	// if (lua_isnumber(L, -1)){
-	// 	index = lua_tonumber(L, -1);
-	// }
-	// else if (lua_isstring(L, -1)){
-	// 	s_index = lua_tostring(L, -1);
-	// }
-	// else if (lua_isnil(L, -1)){
-	// 	lua_pushinteger(L, 1);
-	// 	return 1;
-	// }
-	
-	
-	// cJSON* line = data->data;
-
-	// if (cJSON_IsNull(line) || cJSON_IsInvalid(line) || data->size == 0){
-	// 	lua_pushnil(L);
-	// }
-	// else {
-	// 	for (int i = 0; i < data->size; i++){
-	// 		cJSON * item = cJSON_GetArrayItem(line, i);
-	// 		if (cJSON_GetArrayItem(item, data->index)->valueint == index){
-	// 			item = cJSON_GetArrayItem(line, i + 1);
-	// 			if (item == NULL || cJSON_IsNull(item)) {
-	// 				lua_pushnil(L);
-	// 			}
-	// 			else {
-	// 				lua_pushinteger(L, cJSON_GetArrayItem(item, data->index)->valueint);
-	// 			}
-	// 			break;
-	// 		}
-	// 	}
-	// }
-
-	return 0;
-}
-
-static int excel_pairs(lua_State* L){
-	struct excel_data * data = (struct excel_data *) lua_touserdata(L, 1);
-	//int data_index = (int) luaL_checkinteger(L, 2) - 1;
-	luaL_argcheck(L, data != NULL, 1, "'excel_data' expected");
 	stack_dump(L);
-	
-	// lua_pushnumber(L, 1);
-	printf("excel_pairs function is called.\n");
+	int index = 0; 
+	if (!lua_isnil(L, 2)) {
+		index = luaL_checkinteger(L, 2);
+	}
+
+	if (index >= data_size) {
+		lua_pushnil(L);
+		lua_pushnil(L);
+		return 2;
+	}
+
+	cJSON * item = cJSON_GetArrayItem(data->data, index);
+	cJSON * id = cJSON_GetArrayItem(item, 0);
+
+	InitExcelLineMetaTable(L);
+	lua_pushinteger(L, index + 1);
+	excel_line * excel_line_data = (excel_line*)lua_newuserdata(L, sizeof(excel_line));
+	excel_line_data->line_data = item;
+	excel_line_data->line_fields = data->fields;
+	excel_line_data->id = id->valueint;
+	excel_line_data->size = cJSON_GetArraySize(item);
+
+	luaL_getmetatable(L, "excel_line_meta");
+	lua_setmetatable(L, -2);
 
 
-	lua_pushcclosure(L, _excel_pairs, 1);
+	return 2;
+}
+
+static int excel_list_pairs(lua_State* L){
+	excel_list * data = (excel_list *) lua_touserdata(L, 1);
+	luaL_argcheck(L, data != NULL, 1, "'excel_data' expected");
+
+	lua_pushcclosure(L, inner_excel_list_pairs, 1);
 
 	return 1;
 }
 
-static int excel_len(lua_State* L){
+static int excel_list_len(lua_State* L) {
 	stack_dump(L);
 	printf("len function called.\n");
 
-	struct excel_data * data = (struct excel_data *) lua_touserdata(L, 1);
+	excel_list * data = (excel_list *) lua_touserdata(L, 1);
 	luaL_argcheck(L, data != NULL, 1, "'excel_data' expected");
-	lua_pushnumber(L, data->size);
+	lua_pushinteger(L, data->size);
 	
 	return 1;
 }
 
-static int excel_index(lua_State* L){
-	struct excel_data * data = (struct excel_data *) lua_touserdata(L, 1);
-	int data_index = (int) luaL_checkinteger(L, 2) - 1;
-	luaL_argcheck(L, data != NULL, 1, "'excel_data' expected");
-	lua_newtable(L);
+static int excel_list_index(lua_State* L) {
+	excel_list * excel_list_data = (excel_list *) lua_touserdata(L, 1);
+	luaL_argcheck(L, excel_list_data != NULL, 1, "'excel_list_data' expected");
 
-	// 遍历数据
-	int i = 0;
-	while( i < data->size){		
-		cJSON * item = cJSON_GetArrayItem(data->data, i++);
-		cJSON * index = cJSON_GetArrayItem(item, data->index);
-		if ((int)index->valuedouble == data_index + 1){
-			
-			int len = cJSON_GetArraySize(data->fields);
-			int j = 0;
-			
-			while (j < len){
-				cJSON* fields_item = cJSON_GetArrayItem(data->fields, j);
-				cJSON* name = cJSON_GetObjectItem(fields_item, "name");
-				cJSON* type = cJSON_GetObjectItem(fields_item, "type");
-				if (!strcmp(type->valuestring, "float")){
-					lua_pushnumber(L, cJSON_GetArrayItem(item, j)->valuedouble);
-					stack_dump(L);
-				}
-				else if (!strcmp(type->valuestring, "number")){
-					lua_pushnumber(L, cJSON_GetArrayItem(item, j)->valueint);
-					stack_dump(L);
-				}
-				else if (!strcmp(type->valuestring, "int[]")){
-					// FIXME: 
-					lua_pushnumber(L, 1);
-					// int int_num = cJSON_GetArraySize(item);
-					// int k = 0;
-					// lua_newtable(L);
-					// while (k < int_num){
-					// 	lua_pushinteger(L, cJSON_GetArrayItem(item, k++)->valuedouble);
-					// 	lua_settable(L, -2);
-					// }
-				}
-				else if (!strcmp(type->valuestring, "string")){
-					lua_pushstring(L, cJSON_GetArrayItem(item, j)->valuestring);
-					stack_dump(L);
-				}
-				j++;
-				lua_setfield(L, -2, name->valuestring);
-				stack_dump(L);
-			}
+	int data_index = (int) luaL_checkinteger(L, 2);
+	int list_size = excel_list_data->size;
+
+	int hit = 0;
+	for (int i = 0; i < list_size; i++) {
+		cJSON * cjson_excel_line_data = cJSON_GetArrayItem(excel_list_data->data, i);
+		cJSON * cjson_excel_line_id = cJSON_GetArrayItem(cjson_excel_line_data, 0);
+		if (cjson_excel_line_id->valueint == data_index) {
+			hit = 1;
+			InitExcelLineMetaTable(L);
+			excel_line * excel_line_data = (excel_line*)lua_newuserdata(L, sizeof(excel_line));
+			excel_line_data->line_data = cjson_excel_line_data;
+			excel_line_data->line_fields = excel_list_data->fields;
+			excel_line_data->id = data_index;
+			excel_line_data->size = cJSON_GetArraySize(cjson_excel_line_data);
+
+			printf("hit: id = %d\n", excel_line_data->id);
+			printf("hit: size = %d\n", excel_line_data->size);
+			luaL_getmetatable(L, "excel_line_meta");
+			lua_setmetatable(L, -2);
 			break;
 		}
 	}
+
+	if (!hit) {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+/////////////////////////////////////////////////////////////
+//  excel_line : start
+/////////////////////////////////////////////////////////////
+static int inner_excel_line_pairs(lua_State* L) {
+	return 0;
+}
+
+static int excel_line_pairs(lua_State* L){
+	excel_line * data = (excel_line *) lua_touserdata(L, 1);
+	luaL_argcheck(L, data != NULL, 1, "'excel_data' expected");
+
+	lua_pushcclosure(L, inner_excel_line_pairs, 1);
+
+	return 1;
+}
+
+static int excel_line_len(lua_State* L) {
+	excel_line * data = (excel_line *) lua_touserdata(L, 1);
+	luaL_argcheck(L, data != NULL, 1, "'excel_line_data' expected");
+	lua_pushinteger(L, data->size);
+	
+	return 1;
+}
+
+static int excel_line_tostring(lua_State* L) {
+	excel_line * data = (excel_line *) lua_touserdata(L, 1);
+	luaL_argcheck(L, data != NULL, 1, "'excel_line_data' expected");
+
+	static char tostring[128];
+	snprintf(tostring, sizeof(tostring), "excel_line(%d)", data->id);
+	lua_pushstring(L, tostring);
+	
+	return 1;
+}
+
+static int excel_line_index(lua_State* L) {
+	excel_line * excel_line_data = (excel_line *) lua_touserdata(L, 1);
+	luaL_argcheck(L, excel_line_data != NULL, 1, "'excel_line_data' expected");
+
+	const char * line_name = luaL_checkstring(L, 2);
+
+	lua_newtable(L);
+
+	if (cJSON_IsNull(excel_line_data->line_data) || cJSON_IsInvalid(excel_line_data->line_data)) {
+		lua_pushnil(L);
+		return 1;
+	}
+	
+	int hit = 0;
+	for (int32_t i = 0; i < excel_line_data->size; i++) {
+		cJSON * fields = cJSON_GetArrayItem(excel_line_data->line_fields, i);
+		cJSON* name = cJSON_GetObjectItem(fields, "name");
+		if (strcmp(name->valuestring, line_name) == 0) {
+			hit = 1;
+			cJSON * item = cJSON_GetArrayItem(excel_line_data->line_data, i);
+			cJSON* type = cJSON_GetObjectItem(fields, "type");
+			if (!strcmp(type->valuestring, "float")){
+				lua_pushinteger(L, item->valuedouble);
+			}
+			else if (!strcmp(type->valuestring, "number")){
+				lua_pushinteger(L, item->valueint);
+			}
+			else if (!strcmp(type->valuestring, "int[]")){
+				// FIXME: 
+				lua_pushinteger(L, 1);
+				// int int_num = cJSON_GetArraySize(item);
+				// int k = 0;
+				// lua_newtable(L);
+				// while (k < int_num){
+				// 	lua_pushinteger(L, cJSON_GetArrayItem(item, k++)->valuedouble);
+				// 	lua_settable(L, -2);
+				// }
+			}
+			else if (!strcmp(type->valuestring, "string")){
+				lua_pushstring(L, item->valuestring);
+			}
+			else {
+				lua_pushnil(L);
+			}
+
+			break;
+		}
+	}
+
+	if (!hit) {
+		lua_pushnil(L);
+	}
+
 	return 1;
 }
 
 
-static luaL_Reg arrayFunc [] = {
-	{"__index", excel_index},
-	{"__pairs", excel_pairs},
-	{"__len", excel_len},
-	{NULL, NULL}
-};
-
-int InitMetaTable(lua_State *L){
-	luaL_newmetatable(L, "excel_meta");
-	luaL_setfuncs(L, arrayFunc, 0);
-	return 1;
-}
 
 LUAMOD_API int
 luaopen_excel(lua_State *L) {
@@ -231,33 +316,27 @@ luaopen_excel(lua_State *L) {
 	}
 
 	struct excel_service * inst = excel_service->instance;
-	cJSON * cjson = inst->excel_root;
-	printf("printing excel_services->excel_root %s\n", cJSON_Print(cjson));
+	cJSON * cjson_root = inst->excel_root;
 
-	InitMetaTable(L);
+	InitExcelListMetaTable(L);
 	lua_newtable(L);
 
-	cJSON* file_item = inst->excel_root->child;
-	while (!cJSON_IsNull(file_item) || !cJSON_IsInvalid(file_item)){
-		struct excel_data* user_data = (struct excel_data* ) lua_newuserdata(L, sizeof(struct excel_data));
-		user_data->name = skynet_strdup(file_item->string);
-		user_data->fields = cJSON_GetObjectItem(cJSON_GetObjectItem(cjson, file_item->string), "fields");
-		user_data->data = cJSON_GetObjectItem(cJSON_GetObjectItem(cjson, file_item->string), "data");
-		user_data->size = cJSON_GetArraySize(user_data->data);
-		user_data->index = 0;
+	cJSON* cjson_excel_lists = cjson_root->child;
+	while (!cJSON_IsNull(cjson_excel_lists) || !cJSON_IsInvalid(cjson_excel_lists)){
+		struct excel_list* excel_list_data = (struct excel_list* ) lua_newuserdata(L, sizeof(struct excel_list));
+		excel_list_data->name = skynet_strdup(cjson_excel_lists->string);
+		excel_list_data->fields = cJSON_GetObjectItem(cJSON_GetObjectItem(cjson_root, cjson_excel_lists->string), "fields");
+		excel_list_data->data = cJSON_GetObjectItem(cJSON_GetObjectItem(cjson_root, cjson_excel_lists->string), "data");
+		excel_list_data->size = cJSON_GetArraySize(excel_list_data->data);
 
-		luaL_getmetatable(L, "excel_meta");
+		luaL_getmetatable(L, "excel_list_meta");
 		lua_setmetatable(L, -2);
 		
-		lua_setfield(L, -2, file_item->string);
-		file_item = file_item->next;
-		if (file_item == NULL){
-			printf("excel_root has no more childs.\n");
+		lua_setfield(L, -2, cjson_excel_lists->string);
+		cjson_excel_lists = cjson_excel_lists->next;
+		if (cjson_excel_lists == NULL)
 			break;
-		}
 	}
-
-	printf("excel finished.");
 	
 	return 1;
 }
