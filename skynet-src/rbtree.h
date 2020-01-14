@@ -218,6 +218,37 @@ static inline struct rb_cjson_line* rb_search_cjson_line(struct rb_root * root,
     return NULL;
 }
 
+static inline struct rb_cjson_line * rb_first_cjson_line(struct rb_root * root) {
+    struct rb_node * first = rb_first(root);
+    if (!first)
+        return NULL;
+    
+    return rb_entry(first, struct rb_cjson_line, rb_node);
+}
+
+
+static inline rb_cjson_line * rb_next_cjson_by_index(struct rb_root * root, long index) {
+    struct rb_node * n = root->rb_node;
+    struct rb_cjson_line * line;
+    while (n) {
+        line = rb_entry(n, struct rb_cjson_line, rb_node);
+        if (index < line->index)
+            n = n->rb_left;
+        else if (index > line->index)
+            n = n->rb_right;
+        else {
+            n = rb_next(n);
+            if (!n) {
+                return NULL;   
+            }
+            return rb_entry(n, struct rb_cjson_line, rb_node);
+        }
+            
+    }
+
+    return 0;
+}
+
 static inline struct rb_cjson_line * __rb_insert_cjson_line(struct rb_root * root,
                            unsigned long index,
                            struct rb_node * node)
