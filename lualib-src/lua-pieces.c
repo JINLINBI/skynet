@@ -9,10 +9,14 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>
+#include <mysql/mysql.h>
 
 #include "skynet.h"
 #include "skynet_handle.h"
 #include "spinlock.h"
+
+
+static MYSQL * pmysql = NULL;
 
 enum pieces_type {
 	user,
@@ -33,7 +37,7 @@ typedef struct pieces {
 	uint32_t excel_id;
 	union flags {
 		struct {
-			int64_t classify:8;			// 分类
+			int64_t classify:6;			// 分类
 			int64_t rand:12;			// 独立标志：每秒最多生成4096个uniq tag
 			int64_t dirty:1;			// 是否是脏数据
 			int64_t copy:1;				// 是否是copy数据,具体没想到怎么实现，主要用来省内存
@@ -44,9 +48,9 @@ typedef struct pieces {
 			int64_t life:1;				// 是否具有有效期
 			int64_t online:1;			// 下线消失
 			int64_t virtual:1;			// 虚拟物品
-			int64_t reverse1:1;			// 保存
-			int64_t reverse2:1;			// 保存
-			int64_t reverse3:1;			// 保存
+			int64_t effect:1;			// 影响父节点（需要更新）
+			int64_t excel:1;			// excel模板已动态修改
+			int64_t event:1;			// 事件监听中
 			int64_t reverse4:1;			// 保存
 			int64_t reverse5:1;			// 保存
 			int64_t born_time:30;		// 可以存放30年不溢出
@@ -59,10 +63,26 @@ typedef struct pieces {
 
 typedef struct pieces_op
 {
-	int (*add)(pieces* pi, int copy, int parent);
-	int (*del)(pieces* pi, int copy, int parent);
-	int (*mod)(pieces* pi, int flag, int value);
-	int (*save)();
+	uint32_t (*init)(pieces* pi);
+	uint32_t (*attach)(pieces* pi, pieces * pi_attach);
+	uint32_t (*attach_by_type)(pieces* pi, uint32_t classify, uint32_t type);
+	uint32_t (*attach_by_onlyId)(pieces* pi, uint64_t onlyId);
+	uint32_t (*detach)(pieces* pi, pieces* pi_detach);
+	uint32_t (*detach_by_type)(pieces* pi, uint32_t classify, uint32_t type);
+	uint32_t (*detach_by_onlyId)(pieces* pi, uint64_t onlyId);
+	uint32_t (*detach_all)(pieces* pi);
+	uint32_t (*add)(pieces* pi, uint32_t copy, uint32_t parent);
+	uint32_t (*del)(pieces* pi, uint32_t copy, uint32_t parent);
+	uint32_t (*mod)(pieces* pi, uint32_t flag, uint32_t value);
+	uint32_t (*die)(pieces* pi);
+	uint32_t (*save)(pieces* pi);
+	uint32_t (*serialize)(pieces* pi, void *msg);
+	uint32_t (*unserialize)(pieces* pi, void *msg, uint32_t len);
+	uint32_t (*from)(pieces* pi, uint32_t excelId);
+	uint32_t (*load)(pieces* pi, uint64_t onlyId);
+	uint32_t (*update)(pieces* pi);
+	uint32_t (*change)(pieces* pi, uint32_t classify);
+	uint32_t (*tranlate)(pieces* pi, uint32_t type);
 } pieces_operations;
 
 typedef struct pieces_link
@@ -153,11 +173,42 @@ static int pieces_func(lua_State * L) {
 	return 1;
 }
 
+static int pieces_save_func(lua_State * L) {
+	printf("in pieces_save_function.\n");
+	lua_getfield(L, 1, "pieces_userdata");
+	pieces * pi = (pieces*) lua_touserdata(L, -1);
+	if (pi == NULL) {
+		printf("in pieces_save_function. pi == NULL \n");
+		stack_dump(L);
+		lua_pushboolean(L, 0);
+		return 0;
+	}
+
+	printf("in pieces_save_function. pi != NULL \n");
+
+	stack_dump(L);
+	char sql_buffer[256];
+	memset(sql_buffer, 0, sizeof(sql_buffer));
+	sprintf(sql_buffer, "insert into pieces(id, excelId) values(%lu, %d)", pi->flags.onlyId, pi->excel_id);
+
+	printf("query mysql: %s\n", sql_buffer);
+
+	mysql_real_query(pmysql, sql_buffer, strlen(sql_buffer));
+
+	luaL_dofile(L, "test_ccall.lua");
+	lua_getglobal(L, "callfromc");
+	lua_call(L, 0, 0);
+	lua_pushboolean(L, 1);
+
+
+	return 0;
+}
+
 static luaL_Reg arrayFunc [] = {
 	{"__index", pieces_func},
 	// {"__pairs", excel_pairs},
 	// {"__len", excel_len},
-	// {"root", root_func},
+	{"save", pieces_save_func},
 	{NULL, NULL}
 };
 
@@ -211,6 +262,19 @@ luaopen_pieces(lua_State *L) {
 		{ NULL, NULL }
 	};
 	luaL_newlib(L, l);
+
+	
+	pmysql = mysql_init(NULL);
+	MYSQL * ret = mysql_real_connect(pmysql, "localhost", "dev", "123456", "dev", 0, NULL, 0);
+
+	if (ret == NULL) {
+		fprintf(stderr, "connect mysql error:%s \n", /* mysql_errno(pmysql),*/ mysql_error(pmysql));
+		return -1;
+	}
+	else {
+		fprintf(stdout, "connected mysql server.\n");
+	}
+
 
 	return 1;
 }
