@@ -1,8 +1,8 @@
-﻿{
+{
     "fields": [
         {"name": "id", "type": "number"},
         {"name": "text", "type": "string"},
-        {"name": "parents", "type": "int[]"},
+        {"names": "parents", "type": "int[]"},
         {"name": "maxNode", "type": "float"}
     ],
     "files": [

@@ -1,10 +1,12 @@
-﻿{
+{
     "fields": [
         {"name": "id", "type": "number"},
-        {"name": "name", "type": "string"},
+        {"name": "name", "type": "stringhello"},
         {"name": "type", "type": "number"},
         {"name": "career", "type": "int[]"},
-        {"name": "life", "type": "number"}
+        {"name": "life", "type": "number"},
+        {"name": "life", "type": "number"},
+        {"name": "life", "type": "number", "gkgkgk": 3}
     ],
     "files": [
         "item/item_list"
