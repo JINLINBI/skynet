@@ -125,7 +125,7 @@ static int inner_excel_list_pairs(lua_State * L){
 		start = 0;
 	}
 
-	// 红黑树遍历
+	// rbtree traversal
 	rb_cjson_line * line = NULL;
 	cJSON * item = cJSON_GetArrayItem(data->data, 0);
 	cJSON * id = cJSON_GetArrayItem(item, 0);
@@ -181,7 +181,7 @@ static int excel_list_len(lua_State* L) {
 	excel_list * data = (excel_list *) lua_touserdata(L, 1);
 	luaL_argcheck(L, data != NULL, 1, "'excel_data' expected");
 	lua_pushinteger(L, data->size);
-	
+
 	return 1;
 }
 
@@ -191,7 +191,7 @@ static int excel_list_index(lua_State* L) {
 
 	int data_index = (int) luaL_checkinteger(L, 2);
 
-	// 1.红黑数遍历
+	// rbtree traversal
 	int hit = 0;
 	for (int i = 0; i < inst->filescount; i++) {
 		rb_cjson_root * root = inst->rb_cjson_files_root[i];
@@ -223,7 +223,6 @@ static int excel_list_index(lua_State* L) {
 /////////////////////////////////////////////////////////////
 //  excel_line : start
 /////////////////////////////////////////////////////////////
-
 void parse_line_data(lua_State * L, cJSON * item, cJSON * type) {
 	if (!strcmp(type->valuestring, "float")){
 		lua_pushinteger(L, item->valuedouble);
@@ -250,6 +249,39 @@ void parse_line_data(lua_State * L, cJSON * item, cJSON * type) {
 	}
 }
 
+void parse_line_index_data(lua_State * L, cJSON * items, cJSON * fields, cJSON * index) {
+    int itemscount = cJSON_GetArraySize(items);
+
+	int hit = 0;
+    for (int i = 0; i < itemscount; i++) {
+		cJSON * index_obj = cJSON_GetObjectItem(fields, "index");
+		if (cJSON_IsNull(index_obj) || cJSON_IsInvalid(index_obj))
+			return;
+
+		cJSON * name = cJSON_GetObjectItem(fields, "name");
+        if (strcmp(index->valuestring, name->valuestring) == 0) {
+			printf("create index_data %s", index->string);
+			if (!hit) {
+				hit = 1;
+				lua_newtable(L);
+			}
+
+			cJSON * type = cJSON_GetObjectItem(fields, "type");
+			parse_line_data(L, cJSON_GetArrayItem(items, i), type);			
+			lua_pushinteger(L, index_obj->valueint);
+			lua_settable(L, -2);
+        }
+    }
+}
+
+static const char * get_index_combine_name(const char * name, int indexId) {
+	static char name_str[128];
+	memset(name_str, 0, sizeof(name_str));
+	snprintf(name_str, sizeof(name_str), "%s%d", name, indexId);
+
+	return name_str;
+}
+
 static int inner_excel_line_pairs(lua_State* L) {
 	excel_line * data = (excel_line *) lua_touserdata(L, lua_upvalueindex(1));
 	uint32_t data_size = data->size;
@@ -268,12 +300,29 @@ static int inner_excel_line_pairs(lua_State* L) {
 
 	cJSON* type = cJSON_GetObjectItem(fields, "type");
 	cJSON* name = cJSON_GetObjectItem(fields, "name");
+	cJSON* index = cJSON_GetObjectItem(fields, "index");
+
+
+	char name_str[128];
+	memset(name_str, 0, sizeof(name_str));
+	sprintf(name_str, "%s", name->valuestring);
+
+	if (index && !cJSON_IsNull(index)) {
+		printf(" name string is builded %s: %d\n", name->valuestring, index->valuedouble);
+		sprintf(name_str, "%s%d", name->valuestring, index->valueint);
+	}
 
 	if (!find) {
 		for (int i = 0; i < data_size; i++) {
 			fields = cJSON_GetArrayItem(data->line_fields, i);
 			cJSON* temp_name = cJSON_GetObjectItem(fields, "name");
-			if (strcmp(temp_name->valuestring, index_name) == 0) {
+			cJSON* index_fields = cJSON_GetObjectItem(fields, "index");
+
+			memset(name_str, 0, sizeof(name_str));
+			if (index_fields && !cJSON_IsNull(index_fields))
+				sprintf(name_str, "%s%d", temp_name->valuestring, index_fields->valueint);
+
+			if (strcmp(name_str, index_name) == 0) {
 				if (i + 1 >= data_size) {
 					lua_pushnil(L);
 					lua_pushnil(L);
@@ -282,7 +331,7 @@ static int inner_excel_line_pairs(lua_State* L) {
 				else {
 					col_data = cJSON_GetArrayItem(data->line_data, i + 1);
 					fields = cJSON_GetArrayItem(data->line_fields, i + 1);
-					
+
 					type = cJSON_GetObjectItem(fields, "type");
 					name = cJSON_GetObjectItem(fields, "name");
 					break;
@@ -291,7 +340,7 @@ static int inner_excel_line_pairs(lua_State* L) {
 		}
 	}
 
-	lua_pushstring(L, name->valuestring);
+	lua_pushstring(L, get_index_combine_name());
 	parse_line_data(L, col_data, type);
 
 	return 2;
@@ -310,7 +359,7 @@ static int excel_line_len(lua_State* L) {
 	excel_line * data = (excel_line *) lua_touserdata(L, 1);
 	luaL_argcheck(L, data != NULL, 1, "'excel_line_data' expected");
 	lua_pushinteger(L, data->size);
-	
+
 	return 1;
 }
 
@@ -321,7 +370,7 @@ static int excel_line_tostring(lua_State* L) {
 	static char tostring[128];
 	snprintf(tostring, sizeof(tostring), "excel_line(%d)", data->id);
 	lua_pushstring(L, tostring);
-	
+
 	return 1;
 }
 
@@ -337,25 +386,32 @@ static int excel_line_index(lua_State* L) {
 		lua_pushnil(L);
 		return 1;
 	}
-	
 
-	int hit = 0;
+	printf("index %s.\n", line_name);
+
 	for (int32_t i = 0; i < excel_line_data->size; i++) {
 		cJSON * fields = cJSON_GetArrayItem(excel_line_data->line_fields, i);
 		cJSON * name = cJSON_GetObjectItem(fields, "name");
+		cJSON * index = cJSON_GetObjectItem(fields, "index");
+
+		// using index to combine columns of txt files into table
+		// if (strcmp(name->valuestring, line_name) == 0 && 
+		// 	!cJSON_IsNull(index) && !cJSON_IsInvalid(index)) {
+		// 	hit = 1;
+		// 	printf("getting excel index %s\n", name->valuestring);
+		// 	parse_line_index_data(L, excel_line_data->line_data, fields, name);
+		// } else 
 		if (strcmp(name->valuestring, line_name) == 0) {
-			hit = 1;
+			printf("hitting index %s.\n", line_name);
 			cJSON * item = cJSON_GetArrayItem(excel_line_data->line_data, i);
 			cJSON * type = cJSON_GetObjectItem(fields, "type");
 			parse_line_data(L, item, type);
-			break;
+			goto out;
 		}
 	}
 
-	if (!hit) {
-		lua_pushnil(L);
-	}
-
+	lua_pushnil(L);
+out:
 	return 1;
 }
 
@@ -391,13 +447,13 @@ luaopen_excel(lua_State *L) {
 
 		luaL_getmetatable(L, "excel_list_meta");
 		lua_setmetatable(L, -2);
-		
+
 		lua_setfield(L, -2, cjson_excel_lists->string);
 		cjson_excel_lists = cjson_excel_lists->next;
 		if (cjson_excel_lists == NULL)
 			break;
 	}
-	
+
 	return 1;
 }
 

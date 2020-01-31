@@ -9,8 +9,6 @@
 #include <string.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <locale.h>
-#include <wchar.h>
 #include <cJSON.h>
 #include <unistd.h>
 
@@ -20,6 +18,7 @@ struct excel {
 	struct rb_cjson_root** rb_cjson_files_root;
 };
 
+
 struct excel *
 excel_create(void) {
 	struct excel * inst = skynet_malloc(sizeof(*inst));
@@ -27,6 +26,7 @@ excel_create(void) {
 
 	return inst;
 }
+
 
 void
 excel_release(struct excel * inst) {
@@ -36,6 +36,7 @@ excel_release(struct excel * inst) {
 	skynet_free(inst->rb_cjson_files_root);
 	skynet_free(inst);
 }
+
 
 static int
 excel_cb(struct skynet_context * context, void *ud, int type, int session, uint32_t source, const void * msg, size_t sz) {
@@ -49,6 +50,7 @@ excel_cb(struct skynet_context * context, void *ud, int type, int session, uint3
 	return 0;
 }
 
+
 uint32_t create_rb_index_by_cjson(struct rb_root * root, cJSON * cjson_data) {
 	uint32_t line_count = cJSON_GetArraySize(cjson_data);
 	for (int i = 0; i < line_count; i++) {
@@ -59,34 +61,8 @@ uint32_t create_rb_index_by_cjson(struct rb_root * root, cJSON * cjson_data) {
 
 		rb_insert_cjson_line(root, line_node->index, &line_node->rb_node);
 	}
-	
 
 	return 0;
-}
-
-/*
- * 打印"红黑树"
- */
-static void print_rbtree(struct rb_node *tree, uint32_t key, int direction, uint32_t parent)
-{
-    if (tree != NULL)
-    {   
-        if (direction == 0)    // tree是根节点
-            printf("%2d(B) is root\n", key);
-        else                // tree是分支节点
-            printf("%2d(%s) is %2d's %6s child\n", key, rb_is_black(tree)? "B": "R", parent, direction == 1? "right": "left");
-
-        if (tree->rb_left)
-            print_rbtree(tree->rb_left, rb_entry(tree->rb_left, struct rb_cjson_line, rb_node)->index, -1, key);
-        if (tree->rb_right)
-            print_rbtree(tree->rb_right,rb_entry(tree->rb_right, struct rb_cjson_line, rb_node)->index,  1, key); 
-    }   
-}
-
-void my_print(struct rb_root *root)
-{
-    if (root != NULL && root->rb_node != NULL)
-        print_rbtree(root->rb_node, rb_entry(root->rb_node, struct rb_cjson_line, rb_node)->index, 0, -1); 
 }
 
 
@@ -101,25 +77,26 @@ struct rb_cjson_line * excel_find_cb(struct excel* inst, const char * name, uint
 	return NULL;
 }
 
-/////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////
 unsigned long get_file_size(const char *path)
 {
-	unsigned long filesize = -1;	
+	unsigned long filesize = -1;
 	struct stat statbuff;
 	if (stat(path, &statbuff) < 0){
 		return filesize;
 	}
-	else{
+	else {
 		filesize = statbuff.st_size;
 	}
+
 	return filesize;
 }
 
 
 void* read_file(char* filename){
 	int length = get_file_size(filename);
-	if (length <= 0){
+	if (length <= 0) {
 		return NULL;
 	}
 
@@ -129,15 +106,15 @@ void* read_file(char* filename){
 	memset(data, 0, length + 1);
 
 	int ret = read(file, data, length);
-	if (ret < 0){
+	if (ret < 0) {
 		return NULL;
 	}
 
-	return (void*)data;
+	return (void*) data;
 }
 
 
-// 单个配置文件解析，返回解析的cjson结构信息
+// single config file parse, return parsed cjson struct infomation
 cJSON* parse_excel(char * excel, cJSON * conf, cJSON * last){
 	if (conf == NULL || cJSON_IsInvalid(conf) || excel == NULL){
 		return NULL;
@@ -147,39 +124,41 @@ cJSON* parse_excel(char * excel, cJSON * conf, cJSON * last){
 	if (ret == NULL)
 		ret = cJSON_CreateArray();
 
+
 	FILE* fp;
-	char* line = NULL;
-	size_t len = 0;
-	ssize_t read;
 	fp = fopen(excel, "r");
 	if (fp == NULL)
 		return ret;
 
-	// 获取excel文件共有多少列
+	// get file size
 	int col_count = cJSON_GetArraySize(conf);
-	
-	// 开始解析excel表格
-	read = getline(&line, &len, fp);	// feed first line
+
+	// begain parsing excel txt files
+	char* line = NULL;
+	size_t len = 0;
+	ssize_t read;
+
+	// feed first line
+	read = getline(&line, &len, fp);
 	while((read = getline(&line, &len, fp)) != -1){
 		cJSON * line_item = cJSON_CreateArray();
 		cJSON * item;
 		char *type;
 		int col_index = 0;
 		char * token = strtok(line, "\t");
-		while (token != NULL){
+		while (token != NULL) {
 			type = cJSON_GetObjectItem(cJSON_GetArrayItem(conf, col_index), "type")->valuestring;
-			if (!strcmp(type, "string")){
+			if (!strcmp(type, "string")) {
 				item = cJSON_CreateString(token);
 			}
-			else if (!strcmp(type, "number")){
+			else if (!strcmp(type, "number")) {
 				item = cJSON_CreateNumber(strtoll(token, NULL, 10));
 			}
-			else if (!strcmp(type, "float")){
+			else if (!strcmp(type, "float")) {
 				item = cJSON_CreateNumber(strtof(token, NULL));
 			}
-			else if (!strcmp(type, "int[]")){
+			else if (!strcmp(type, "int[]")) {
 				item = cJSON_CreateArray();
-				
 				char * tmp = skynet_strdup(token);
 				char * t;
 				for (t = strsep(&tmp, "*"); t != NULL; t = strsep(&tmp, "*")){
@@ -188,7 +167,7 @@ cJSON* parse_excel(char * excel, cJSON * conf, cJSON * last){
 				}
 				skynet_free(tmp);
 			}
-			else{
+			else {
 				item = cJSON_CreateBool(0);
 			}
 
@@ -198,12 +177,13 @@ cJSON* parse_excel(char * excel, cJSON * conf, cJSON * last){
 			col_index++;
 		}
 
-		if (cJSON_IsInvalid(item)){
+		if (cJSON_IsInvalid(item)) {
 			printf("item is invalid.");
 		}
-		
+
 		if (col_index != col_count){
-			printf("excel file line: %d col count(%d) dont't match conf's!\n", cJSON_GetArraySize(line_item), cJSON_GetArraySize(ret) + 1);
+			printf("excel file line: %d col count(%d) dont't match conf's!\n",
+			cJSON_GetArraySize(line_item), cJSON_GetArraySize(ret) + 1);
 			continue;
 		}
 
@@ -228,25 +208,28 @@ excel_init(struct excel * inst, struct skynet_context *ctx, const char * excel_p
 		char files_dir[256] = {0};
 		sprintf(files_dir, "%s/json", excel_path);
 
-		dir = opendir(files_dir);		// 打开json文件夹
+		// open json config directories
+		dir = opendir(files_dir);
 		cJSON* json_files = cJSON_CreateArray();
 		if (dir != NULL){
 			while ((dirt = readdir(dir)) != NULL){
-				if (strcmp(dirt->d_name, ".") == 0 || strcmp(dirt->d_name, "..") == 0 || strcmp(dirt->d_name, "json") == 0)
-					continue;
+				if (strcmp(dirt->d_name, ".") == 0 ||
+				    strcmp(dirt->d_name, "..") == 0 ||
+				    strcmp(dirt->d_name, "json") == 0)
+				    continue;
 				char temp[256];
 				sscanf(dirt->d_name, "%[^.]", temp);
 				cJSON_AddItemToArray(json_files, cJSON_CreateString(temp));
 			}
 		}
 
-		// 广度优先遍历文件夹,开始解析json文件
+		// using breadth-first search to parse json files
 		cJSON * json_file = NULL;
 		char excel_path_name[128];
 		inst->filescount = cJSON_GetArraySize(json_files);
 
 
-		// 红黑树索引文件数组内存
+		// using rbtree to create memory index
 		inst->rb_cjson_files_root = skynet_malloc(sizeof(struct rb_cjson_root*) * inst->filescount);
 		memset(inst->rb_cjson_files_root, 0, sizeof(struct rb_cjson_root*) * inst->filescount);
 		for (int i = 0; i < inst->filescount; i++){
@@ -260,11 +243,11 @@ excel_init(struct excel * inst, struct skynet_context *ctx, const char * excel_p
 				printf("\e[0;31m %s file might has errors.\e[0m\n", files_dir);
 				continue;
 			}
-			
+
 			cJSON * files = cJSON_GetObjectItem(json_file, "files");
 			cJSON * fields = cJSON_GetObjectItem(json_file, "fields");
 
-			// 遍历json规则对应下的所有分块excel文件
+			// traversal all excel-txt files of json file included.
 			int file_count = cJSON_GetArraySize(files);
 			char* excel_filename;
 			cJSON* ret = NULL;
@@ -283,7 +266,7 @@ excel_init(struct excel * inst, struct skynet_context *ctx, const char * excel_p
 			cJSON_AddItemToObject(inst->excel_root, array_file_name->valuestring, file_item);
 			cJSON_AddItemReferenceToObject(file_item, "fields", fields);
 			cJSON_AddItemReferenceToObject(file_item, "data", ret);
-			
+
 			cJSON_DetachItemFromObject(json_file, "fields");
 			cJSON_Delete(json_file);
 
@@ -293,6 +276,7 @@ excel_init(struct excel * inst, struct skynet_context *ctx, const char * excel_p
 			create_rb_index_by_cjson(&inst->rb_cjson_files_root[i]->rb_root, ret);
 		}
 
+		// release memory
 		closedir(dir);
 		cJSON_Delete(json_files);
 	}

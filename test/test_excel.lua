@@ -8,11 +8,16 @@ skynet.start(function()
 	for i, line in pairs(item_list) do
 		print(">>>>>>>>>>>>>>>")
 		print("line's name: " .. line.name)
+		local count = 1
 		for key, value in pairs(line) do
 			print(key .. ": " .. value)
+			count = count + 1
+			if count > 10 then
+                            break
+                        end
 		end
 	end
-	print("???????????????????")
+
 	print(item_list[5].id)
 	print(item_list[5].name)
 end)

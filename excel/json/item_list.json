@@ -1,12 +1,14 @@
 {
     "fields": [
         {"name": "id", "type": "number"},
-        {"name": "name", "type": "stringhello"},
+        {"name": "name", "type": "string"},
         {"name": "type", "type": "number"},
         {"name": "career", "type": "int[]"},
         {"name": "life", "type": "number"},
-        {"name": "life", "type": "number"},
-        {"name": "life", "type": "number", "gkgkgk": 3}
+        {"name": "test", "type": "number", "index": 1},
+        {"name": "test", "type": "number", "index": 2},
+        {"name": "test", "type": "number", "index": 3},
+        {"name": "test", "type": "number", "index": 4}
     ],
     "files": [
         "item/item_list"
