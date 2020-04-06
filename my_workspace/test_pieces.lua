@@ -29,4 +29,5 @@ skynet.start(function()
     -- end
     -- local pieces_data = p.onlyId["pieces_userdata"]
     -- print("get userdata: " .. pieces_data.Id)
+	skynet.exit()
 end)

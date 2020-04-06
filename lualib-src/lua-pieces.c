@@ -195,9 +195,6 @@ static int pieces_save_func(lua_State * L) {
 
 	mysql_real_query(pmysql, sql_buffer, strlen(sql_buffer));
 
-	luaL_dofile(L, "test_ccall.lua");
-	lua_getglobal(L, "callfromc");
-	lua_call(L, 0, 0);
 	lua_pushboolean(L, 1);
 
 

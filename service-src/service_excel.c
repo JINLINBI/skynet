@@ -1,5 +1,6 @@
 #include "skynet.h"
 #include "rbtree.h"
+#include "lua-seri.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,6 +19,23 @@ struct excel {
 	struct rb_cjson_root** rb_cjson_files_root;
 };
 
+struct read_block {
+	char * buffer;
+	int len;
+	int ptr;
+};
+
+static void *
+rb_read(struct read_block *rb, int sz) {
+	if (rb->len < sz) {
+		return NULL;
+	}
+
+	int ptr = rb->ptr;
+	rb->ptr += sz;
+	rb->len -= sz;
+	return rb->buffer + ptr;
+}
 
 struct excel *
 excel_create(void) {
@@ -44,6 +62,21 @@ excel_cb(struct skynet_context * context, void *ud, int type, int session, uint3
 	switch (type) {
 		case PTYPE_TEXT:
 			printf("excel service get msg: %s\n", (char*)msg);
+
+			struct read_block {
+				char * buffer;
+				int len;
+				int ptr;
+			};
+			struct read_block rb = {msg, sz, 0};
+
+			uint8_t type = 0;
+			uint8_t *t = rb_read(&rb, sizeof(type));
+			if (t == NULL)
+				break;
+			type = *t;
+
+			// push_value(L, &rb, type & 0x7, type>>3);
 			break;
 	}
 

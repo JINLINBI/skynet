@@ -102,7 +102,7 @@ $(CSERVICE_PATH) :
 
 define CSERVICE_TEMP
   $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c | $$(CSERVICE_PATH)
-	$$(CC) $$(CFLAGS) $$(SHARED) $(CJSON) $$< -o $$@ -Iskynet-src -I$(CJSON_INC)
+	$$(CC) $$(CFLAGS) $$(SHARED) $(CJSON) $$< -o $$@ -Iskynet-src -I$(CJSON_INC) -Ilualib-src
 endef
 
 $(foreach v, $(CSERVICE), $(eval $(call CSERVICE_TEMP,$(v))))

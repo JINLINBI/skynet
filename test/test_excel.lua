@@ -17,7 +17,15 @@ skynet.start(function()
                         end
 		end
 	end
-
+	
+	-- local atb_data = excel.atb_data
+	-- for i, line in pairs(atb_data) do
+	-- 	print("********************")
+	-- 	for key, value in pairs(line) do
+	-- 		print(key .. ": " .. value)
+	-- 	end
+	-- end
+	print("???????????????????")
 	print(item_list[5].id)
 	print(item_list[5].name)
 end)
