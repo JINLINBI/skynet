@@ -12,10 +12,13 @@
 #include <fcntl.h>
 #include <cJSON.h>
 #include <unistd.h>
+#define FILENAME_MAXLEN 1024
 
+static char s_temp_str[FILENAME_MAXLEN + 1];
 struct excel {
 	int filescount;
 	cJSON* excel_root;
+	const char* excel_path;
 	struct rb_cjson_root** rb_cjson_files_root;
 };
 
@@ -68,7 +71,7 @@ excel_cb(struct skynet_context * context, void *ud, int type, int session, uint3
 				int len;
 				int ptr;
 			};
-			struct read_block rb = {msg, sz, 0};
+			struct read_block rb = {(char*)msg, sz, 0};
 
 			uint8_t type = 0;
 			uint8_t *t = rb_read(&rb, sizeof(type));
@@ -112,206 +115,171 @@ struct rb_cjson_line * excel_find_cb(struct excel* inst, const char * name, uint
 
 
 /////////////////////////////////////////////////////////////
-unsigned long get_file_size(const char *path)
-{
-	unsigned long filesize = -1;
-	struct stat statbuff;
-	if (stat(path, &statbuff) < 0){
-		return filesize;
-	}
-	else {
-		filesize = statbuff.st_size;
-	}
+// parse json description struct files
+// open json config directories like ...
+// ../excel (excel_path )
+// ../excel/json/*.json
+// ../excel/json/***.json
+// locate excel txt files below
+// ../excel/item/item_list.txt
+// ../excel/item/item_type.txt
+void create_excel_root_json_struct(struct excel* inst) {
+	// create excel root cjson obj
+	inst->excel_root = cJSON_CreateObject();
 
-	return filesize;
-}
+	snprintf(s_temp_str, FILENAME_MAXLEN, "%s/json", inst->excel_path);
+	DIR* dir = opendir(s_temp_str);
+	struct dirent* dirt;
+	
+	if (dir != NULL) {
+		while ((dirt = readdir(dir)) != NULL){
+			if (strcmp(strrchr(dirt->d_name, '.'), ".json") == 0 ) {
+				// json excel-desctription files save like this:
+				// {
+				//     "fields": [
+				//         {"name": "id", "type": "number"},
+				//         {"name": "name", "type": "string"},
+				//			...
+				//     ],
+				//     "files": [
+				//         "item/item_list"
+				//     ]
+				// }
+				// parse data into memory json struct like this:
+				// excel_root = 
+				// {
+				//     "item_list" : {
+				//         	"fields": [
+				//				... just like above json struct, copy them 
+				//         	],
+				//			"files": [
+				//			    ... just like above json struct, copy them 
+				//			],
+				//			"data" : [[1, "gift", ...], [2, "weapon", ...], ...]
+				//     }, ...
+				// }
+				cJSON* excel_txt_cjson = cJSON_CreateObject();
+				sscanf(dirt->d_name, "%[^.]", s_temp_str);
+				cJSON_AddItemToObject(inst->excel_root, s_temp_str, excel_txt_cjson);
 
-
-void* read_file(char* filename){
-	int length = get_file_size(filename);
-	if (length <= 0) {
-		return NULL;
-	}
-
-	int file = open(filename, O_RDONLY);
-	char* data = skynet_malloc(length);
-
-	memset(data, 0, length + 1);
-
-	int ret = read(file, data, length);
-	if (ret < 0) {
-		return NULL;
-	}
-
-	return (void*) data;
-}
-
-
-// single config file parse, return parsed cjson struct infomation
-cJSON* parse_excel(char * excel, cJSON * conf, cJSON * last){
-	if (conf == NULL || cJSON_IsInvalid(conf) || excel == NULL){
-		return NULL;
-	}
-
-	cJSON * ret = last;
-	if (ret == NULL)
-		ret = cJSON_CreateArray();
-
-
-	FILE* fp;
-	fp = fopen(excel, "r");
-	if (fp == NULL)
-		return ret;
-
-	// get file size
-	int col_count = cJSON_GetArraySize(conf);
-
-	// begain parsing excel txt files
-	char* line = NULL;
-	size_t len = 0;
-	ssize_t read;
-
-	// feed first line
-	read = getline(&line, &len, fp);
-	while((read = getline(&line, &len, fp)) != -1){
-		cJSON * line_item = cJSON_CreateArray();
-		cJSON * item;
-		char *type;
-		int col_index = 0;
-		char * token = strtok(line, "\t");
-		while (token != NULL) {
-			type = cJSON_GetObjectItem(cJSON_GetArrayItem(conf, col_index), "type")->valuestring;
-			if (!strcmp(type, "string")) {
-				item = cJSON_CreateString(token);
-			}
-			else if (!strcmp(type, "number")) {
-				item = cJSON_CreateNumber(strtoll(token, NULL, 10));
-			}
-			else if (!strcmp(type, "float")) {
-				item = cJSON_CreateNumber(strtof(token, NULL));
-			}
-			else if (!strcmp(type, "int[]")) {
-				item = cJSON_CreateArray();
-				char * tmp = skynet_strdup(token);
-				char * t;
-				for (t = strsep(&tmp, "*"); t != NULL; t = strsep(&tmp, "*")){
-					// while (t != NULL){
-					cJSON_AddItemToArray(item, cJSON_CreateNumber(strtoll(t, NULL, 10)));
+				snprintf(s_temp_str, FILENAME_MAXLEN, "%s/json/%s", inst->excel_path, dirt->d_name);
+				FILE* fp = fopen(s_temp_str, "r");
+				if (fp == NULL) {
+					fclose(fp);
+					continue;
 				}
-				skynet_free(tmp);
+
+				// filedata length
+				fseek(fp, 0L, SEEK_END); /* 定位到文件末尾 */  
+				size_t flen = ftell(fp);
+				fseek(fp, 0L, SEEK_SET);
+
+				char* file_data = skynet_malloc(flen);
+				fread(file_data, flen, 1, fp);
+				cJSON* json_file = cJSON_Parse(file_data);
+				
+				cJSON* fields = cJSON_GetObjectItem(json_file, "fields");
+				cJSON* files = cJSON_GetObjectItem(json_file, "files");
+				if (cJSON_IsNull(json_file) || cJSON_IsNull(fields) || cJSON_IsNull(files)) {
+					cJSON_Delete(json_file);
+					skynet_free(file_data);
+					fclose(fp);
+					continue;
+				}
+
+				cJSON_AddItemReferenceToObject(excel_txt_cjson, "fields", fields);
+				cJSON_AddItemReferenceToObject(excel_txt_cjson, "files", files);
+				cJSON_AddItemReferenceToObject(excel_txt_cjson, "data", cJSON_CreateArray());
+
+				cJSON_DetachItemFromObject(json_file, "fields");
+				cJSON_DetachItemFromObject(json_file, "files");
+
+				cJSON_Delete(json_file);
+				skynet_free(file_data);
+				fclose(fp);
 			}
-			else {
-				item = cJSON_CreateBool(0);
-			}
-
-			cJSON_AddItemToArray(line_item, item);
-
-			token = strtok(NULL, "\t");
-			col_index++;
 		}
+	}
+	inst->filescount = cJSON_GetArraySize(inst->excel_root);
 
-		if (cJSON_IsInvalid(item)) {
-			printf("item is invalid.");
-		}
+	closedir(dir);
+}
 
-		if (col_index != col_count){
-			printf("excel file line: %d col count(%d) dont't match conf's!\n",
-			cJSON_GetArraySize(line_item), cJSON_GetArraySize(ret) + 1);
+
+void parse_excel_root_json_data(struct excel* inst) {
+	// rbtree index
+	inst->rb_cjson_files_root = skynet_malloc(sizeof(struct rb_cjson_root*) * inst->filescount);
+	memset(inst->rb_cjson_files_root, 0, sizeof(struct rb_cjson_root*) * inst->filescount);
+
+	for (int i = 0; i < inst->filescount; i++) {
+		cJSON* excel_txt_cjson = cJSON_GetArrayItem(inst->excel_root, i);
+		if (cJSON_IsNull(excel_txt_cjson)) {
 			continue;
 		}
 
-		cJSON_AddItemToArray(ret, line_item);
-	}
+		cJSON* fields = cJSON_GetObjectItem(excel_txt_cjson, "fields");
+		cJSON* files = cJSON_GetObjectItem(excel_txt_cjson, "files");
+		cJSON* data = cJSON_GetObjectItem(excel_txt_cjson, "data");
 
-	if (line)
-		free(line);
-
-	return ret;
-}
-
-
-int
-excel_init(struct excel * inst, struct skynet_context *ctx, const char * excel_path) {
-	struct dirent* dirt;
-	DIR * dir;
-	inst->excel_root = cJSON_CreateObject();
-
-	skynet_command(ctx, "REG", NULL);
-	if (excel_path) {
-		char files_dir[256] = {0};
-		sprintf(files_dir, "%s/json", excel_path);
-
-		// open json config directories
-		dir = opendir(files_dir);
-		cJSON* json_files = cJSON_CreateArray();
-		if (dir != NULL){
-			while ((dirt = readdir(dir)) != NULL){
-				if (strcmp(dirt->d_name, ".") == 0 ||
-				    strcmp(dirt->d_name, "..") == 0 ||
-				    strcmp(dirt->d_name, "json") == 0)
-				    continue;
-				char temp[256];
-				sscanf(dirt->d_name, "%[^.]", temp);
-				cJSON_AddItemToArray(json_files, cJSON_CreateString(temp));
-			}
-		}
-
-		// using breadth-first search to parse json files
-		cJSON * json_file = NULL;
-		char excel_path_name[128];
-		inst->filescount = cJSON_GetArraySize(json_files);
-
-
-		// using rbtree to create memory index
-		inst->rb_cjson_files_root = skynet_malloc(sizeof(struct rb_cjson_root*) * inst->filescount);
-		memset(inst->rb_cjson_files_root, 0, sizeof(struct rb_cjson_root*) * inst->filescount);
-		for (int i = 0; i < inst->filescount; i++){
-			cJSON* array_file_name = cJSON_GetArrayItem(json_files, i);
-			sprintf(files_dir, "%s/json/%s.json", excel_path, array_file_name->valuestring);
-			char* json_file_data = (char*)read_file(files_dir);
-			json_file = cJSON_Parse(json_file_data);
-			skynet_free(json_file_data);
-
-			if (cJSON_IsNull(json_file) || cJSON_IsInvalid(json_file)){
-				printf("\e[0;31m %s file might has errors.\e[0m\n", files_dir);
+		for (int j = 0; j < cJSON_GetArraySize(files); j++) {
+			cJSON* files_item = cJSON_GetArrayItem(files, j);
+			snprintf(s_temp_str, FILENAME_MAXLEN, "%s/%s.txt", inst->excel_path, files_item->valuestring);
+			FILE* fp = fopen(s_temp_str, "r");
+			if (fp == NULL) {
 				continue;
 			}
 
-			cJSON * files = cJSON_GetObjectItem(json_file, "files");
-			cJSON * fields = cJSON_GetObjectItem(json_file, "fields");
+			char* line = NULL;
+			size_t len;
 
-			// traversal all excel-txt files of json file included.
-			int file_count = cJSON_GetArraySize(files);
-			char* excel_filename;
-			cJSON* ret = NULL;
-			for (int i = 0; i < file_count; i++){
-				excel_filename = cJSON_GetArrayItem(files, i)->valuestring;
-				if (excel_filename == NULL){
-					printf("parse json(%s) files(%s) failed...", array_file_name->valuestring, excel_filename);
-					continue;
+			// skip first line which is note
+			ssize_t read = getline(&line, &len, fp);
+			while ((read = getline(&line, &len, fp)) != -1) {
+				cJSON * excel_line_item = cJSON_CreateArray();
+				cJSON_AddItemToArray(data, excel_line_item);
+				char * token = strtok(line, "\t");
+				for (int col = 0; col < cJSON_GetArraySize(fields); col++) {
+					cJSON* col_item = cJSON_GetArrayItem(fields, col);
+					cJSON* new_item = NULL;
+					if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "string")) {
+						new_item = cJSON_CreateString(token);
+					}
+					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "number")) {
+						new_item = cJSON_CreateNumber(strtold(token, NULL));
+					}
+					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "int[]")) {
+						new_item = cJSON_CreateArray();
+						char* tmp = skynet_strdup(token);
+						for (char* t = strsep(&tmp, "*"); t != NULL; t = strsep(&tmp, "*")){
+							cJSON_AddItemToArray(new_item, cJSON_CreateNumber(strtold(t, NULL)));
+						}
+						skynet_free(tmp);
+					}
+					token = strtok(NULL, "\t");
+					cJSON_AddItemToArray(excel_line_item, new_item);
 				}
-				snprintf(excel_path_name, 256, "%s/%s.txt", excel_path, excel_filename);
-
-				ret = parse_excel(excel_path_name, fields, ret);
 			}
 
-			cJSON* file_item = cJSON_CreateObject();
-			cJSON_AddItemToObject(inst->excel_root, array_file_name->valuestring, file_item);
-			cJSON_AddItemReferenceToObject(file_item, "fields", fields);
-			cJSON_AddItemReferenceToObject(file_item, "data", ret);
-
-			cJSON_DetachItemFromObject(json_file, "fields");
-			cJSON_Delete(json_file);
-
+			// create rbtree index for excel data
 			inst->rb_cjson_files_root[i] = skynet_malloc(sizeof(struct rb_cjson_root));
 			memset(inst->rb_cjson_files_root[i], 0, sizeof(struct rb_cjson_root));
-			inst->rb_cjson_files_root[i]->name = skynet_strdup(array_file_name->valuestring);
-			create_rb_index_by_cjson(&inst->rb_cjson_files_root[i]->rb_root, ret);
+			inst->rb_cjson_files_root[i]->name = skynet_strdup(excel_txt_cjson->string);
+			create_rb_index_by_cjson(&inst->rb_cjson_files_root[i]->rb_root, files_item);
 		}
+	}
+}
 
-		// release memory
-		closedir(dir);
-		cJSON_Delete(json_files);
+
+int excel_init(struct excel* inst, struct skynet_context* ctx, const char* excel_path) {
+	inst->excel_root = cJSON_CreateObject();
+	skynet_command(ctx, "REG", NULL);
+
+	cJSON_Hooks cjson_hooks = {skynet_malloc, skynet_free};
+	cJSON_InitHooks(&cjson_hooks);
+	if (excel_path) {
+		inst->excel_path = skynet_strdup(excel_path);
+		create_excel_root_json_struct(inst);
+		parse_excel_root_json_data(inst);
 	}
 
 	printf("%s", cJSON_Print(inst->excel_root));

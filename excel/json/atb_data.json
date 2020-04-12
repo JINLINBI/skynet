@@ -2,8 +2,8 @@
     "fields": [
         {"name": "id", "type": "number"},
         {"name": "text", "type": "string"},
-        {"names": "parents", "type": "int[]"},
-        {"name": "maxNode", "type": "float"}
+        {"name": "parents", "type": "int[]"},
+        {"name": "maxNode", "type": "number"}
     ],
     "files": [
         "atb/atb_data_cmn",

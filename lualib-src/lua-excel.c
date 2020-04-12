@@ -19,6 +19,7 @@
 typedef struct excel {
 	int filescount;
 	cJSON* excel_root;
+	const char* excel_path;
 	struct rb_cjson_root** rb_cjson_files_root;
 } excel_service;
 
