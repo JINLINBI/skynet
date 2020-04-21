@@ -12,5 +12,5 @@ REG {
 skynet.start(function()
 	local service = skynet.localname(".excel")
 
-	skynet.send(service, "text", "hello!!!!")
+	skynet.send(service, "text", )
 end)

@@ -62,15 +62,12 @@ excel_release(struct excel * inst) {
 static int
 excel_cb(struct skynet_context * context, void *ud, int type, int session, uint32_t source, const void * msg, size_t sz) {
 	//struct excel * inst = ud;
+	#define TYPE_SHORT_STRING 4
+	// hibits 0~31 : len
+	#define TYPE_LONG_STRING 5
 	switch (type) {
 		case PTYPE_TEXT:
 			printf("excel service get msg: %s\n", (char*)msg);
-
-			struct read_block {
-				char * buffer;
-				int len;
-				int ptr;
-			};
 			struct read_block rb = {(char*)msg, sz, 0};
 
 			uint8_t type = 0;
@@ -80,6 +77,20 @@ excel_cb(struct skynet_context * context, void *ud, int type, int session, uint3
 			type = *t;
 
 			// push_value(L, &rb, type & 0x7, type>>3);
+			switch(type & 0x7) {
+				case TYPE_SHORT_STRING: {
+					printf("get short string\n");
+					break;
+				}
+				case TYPE_LONG_STRING: {
+					printf("get long string\n");
+					break;
+				}
+				default: {
+					printf("get unknow type\n");
+					break;
+				}
+			}
 			break;
 	}
 
@@ -165,8 +176,7 @@ void create_excel_root_json_struct(struct excel* inst) {
 				snprintf(s_temp_str, FILENAME_MAXLEN, "%s/json/%s", inst->excel_path, dirt->d_name);
 				FILE* fp = fopen(s_temp_str, "r");
 				if (fp == NULL) {
-					fclose(fp);
-					continue;
+					goto fileout;
 				}
 
 				// filedata length
@@ -181,10 +191,7 @@ void create_excel_root_json_struct(struct excel* inst) {
 				cJSON* fields = cJSON_GetObjectItem(json_file, "fields");
 				cJSON* files = cJSON_GetObjectItem(json_file, "files");
 				if (cJSON_IsNull(json_file) || cJSON_IsNull(fields) || cJSON_IsNull(files)) {
-					cJSON_Delete(json_file);
-					skynet_free(file_data);
-					fclose(fp);
-					continue;
+					goto out;
 				}
 
 				cJSON_AddItemReferenceToObject(excel_txt_cjson, "fields", fields);
@@ -194,8 +201,10 @@ void create_excel_root_json_struct(struct excel* inst) {
 				cJSON_DetachItemFromObject(json_file, "fields");
 				cJSON_DetachItemFromObject(json_file, "files");
 
+out:
 				cJSON_Delete(json_file);
 				skynet_free(file_data);
+fileout:
 				fclose(fp);
 			}
 		}
