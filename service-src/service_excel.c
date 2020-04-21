@@ -256,6 +256,10 @@ void parse_excel_root_json_data(struct excel* inst) {
 			// skip first line which is note
 			ssize_t read = getline(&line, &len, fp);
 			while ((read = getline(&line, &len, fp)) != -1) {
+				// skip empty line
+				trim(line);
+				if (!line) continue;
+
 				cJSON * excel_line_item = cJSON_CreateArray();
 				cJSON_AddItemToArray(data, excel_line_item);
 				char * token = NULL;
@@ -296,7 +300,7 @@ void parse_excel_root_json_data(struct excel* inst) {
 			inst->rb_cjson_files_root[i] = skynet_malloc(sizeof(struct rb_cjson_root));
 			memset(inst->rb_cjson_files_root[i], 0, sizeof(struct rb_cjson_root));
 			inst->rb_cjson_files_root[i]->name = skynet_strdup(excel_txt_cjson->string);
-			create_rb_index_by_cjson(&inst->rb_cjson_files_root[i]->rb_root, files_item);
+			create_rb_index_by_cjson(&inst->rb_cjson_files_root[i]->rb_root, data);
 		}
 	}
 }

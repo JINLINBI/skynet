@@ -2,7 +2,7 @@
     "fields": [
         {"name": "id", "type": "number"},
         {"name": "text", "type": "string"},
-        {"name": "parents", "type": "int[]"},
+        {"name": "parents", "type": "number[]"},
         {"name": "maxNode", "type": "string[]"}
     ],
     "files": [

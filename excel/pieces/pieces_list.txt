@@ -1,16 +1,15 @@
-id	名字	备注	类型	配置名	职业	生存时间	日志	启用红点	字符串数组
-1	player	用户		player_list	234*23	23.32			阿三扽啊东方*englishtesting
-2	role	角色		role_list	1*2*4	84884.2			阿三扽啊东方*englishtesting
-3	item	物品		item_list	2*234324	34			阿三扽啊东方*englishtesting
-4	task	任务		task_list	234*23	23.32			阿三扽啊东方*englishtesting
-5	attr	属性		attr_list	1*2*4	84884.2			阿三扽啊东方*englishtesting
-6	team	队伍		team_list					
-7	organ	组织							
-8	mail	邮件		mail_list					
-9	msg	消息		msg_list					
-10	record	记录		record_list					
-11	rank	排行榜		rank_list					
-12	event	事件		event_list					
-13	access	许可		access_list					
-14	condition	条件		condition_list					
-									
+id	名字	备注	类型	配置名	职业	生存时间	日志	启用红点
+1	player	用户		player_list	234*23	23.32		
+2	role	角色		role_list	1*2*4	84884.2		
+3	item	物品		item_list	2*234324	34		
+4	task	任务		task_list	234*23	23.32		
+5	attr	属性		attr_list	1*2*4	84884.2		
+6	team	队伍		team_list				
+7	organ	组织		organ_list				
+8	mail	邮件		mail_list				
+9	msg	消息		msg_list				
+10	record	记录		record_list				
+11	rank	排行榜		rank_list				
+12	event	事件		event_list				
+13	access	许可		access_list				
+14	condition	条件		condition_list				

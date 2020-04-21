@@ -265,16 +265,16 @@ luaopen_pieces(lua_State *L) {
 	luaL_newlib(L, l);
 
 	
-	pmysql = mysql_init(NULL);
-	MYSQL * ret = mysql_real_connect(pmysql, "localhost", "dev", "123456", "dev", 0, NULL, 0);
+	// pmysql = mysql_init(NULL);
+	// MYSQL * ret = mysql_real_connect(pmysql, "localhost", "dev", "123456", "dev", 0, NULL, 0);
 
-	if (ret == NULL) {
-		fprintf(stderr, "connect mysql error:%s \n", /* mysql_errno(pmysql),*/ mysql_error(pmysql));
-		return -1;
-	}
-	else {
-		fprintf(stdout, "connected mysql server.\n");
-	}
+	// if (ret == NULL) {
+	// 	fprintf(stderr, "connect mysql error:%s \n", /* mysql_errno(pmysql),*/ mysql_error(pmysql));
+	// 	return -1;
+	// }
+	// else {
+	// 	fprintf(stdout, "connected mysql server.\n");
+	// }
 
 
 	return 1;
