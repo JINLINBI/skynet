@@ -214,6 +214,18 @@ fileout:
 	closedir(dir);
 }
 
+void trim(char* str) {
+	if (str == NULL) return;
+
+	for (int32_t i = strlen(str) - 1; i >= 0; i--) {
+		if (str[i] == '\r' || str[i] == '\n'){
+			str[i] = '\0';
+		}
+		else{
+			break;
+		}
+	}
+}
 
 void parse_excel_root_json_data(struct excel* inst) {
 	// rbtree index
@@ -246,25 +258,36 @@ void parse_excel_root_json_data(struct excel* inst) {
 			while ((read = getline(&line, &len, fp)) != -1) {
 				cJSON * excel_line_item = cJSON_CreateArray();
 				cJSON_AddItemToArray(data, excel_line_item);
-				char * token = strtok(line, "\t");
-				for (int col = 0; col < cJSON_GetArraySize(fields); col++) {
+				char * token = NULL;
+				
+				for (int32_t col = 0; col < cJSON_GetArraySize(fields); col++) {
+					token = strsep(&line, "\t");
 					cJSON* col_item = cJSON_GetArrayItem(fields, col);
 					cJSON* new_item = NULL;
 					if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "string")) {
+						trim(token);
 						new_item = cJSON_CreateString(token);
 					}
-					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "number")) {
-						new_item = cJSON_CreateNumber(strtold(token, NULL));
-					}
-					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "int[]")) {
+					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "string[]")) {
 						new_item = cJSON_CreateArray();
-						char* tmp = skynet_strdup(token);
+						char* tmp = token;
 						for (char* t = strsep(&tmp, "*"); t != NULL; t = strsep(&tmp, "*")){
-							cJSON_AddItemToArray(new_item, cJSON_CreateNumber(strtold(t, NULL)));
+							trim(t);
+							cJSON_AddItemToArray(new_item, cJSON_CreateString(t));
 						}
-						skynet_free(tmp);
 					}
-					token = strtok(NULL, "\t");
+					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "number")) {
+						new_item = cJSON_CreateNumber(strtold(token? token: "0", NULL));
+					}
+					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "number[]")) {
+						new_item = cJSON_CreateArray();
+						char* tmp = token;
+						for (char* t = strsep(&tmp, "*"); t != NULL; t = strsep(&tmp, "*")){
+							trim(t);
+							cJSON_AddItemToArray(new_item, cJSON_CreateNumber(strtold(t? t: "0", NULL)));
+						}
+					}
+
 					cJSON_AddItemToArray(excel_line_item, new_item);
 				}
 			}

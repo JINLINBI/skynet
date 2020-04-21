@@ -1,4 +1,4 @@
-id	string	int[]	float
-23	playertest	234*2.3	23.32
-35	中文测试	1s**42	84884.2f
+id	string	int[]	string[]
+23	playertest	234*2.3	asdfkkaskdfjjajsdfjajsdfj*ajdsfjasdjfjasdjfjasdjfjasdfj
+35	中文测试	1s**42	中文测试*adfadsf*英文测试*不可能的时期
 56	dont@234&&9023**@))W you see	2*234324e10	34.0000001

@@ -42,10 +42,9 @@ typedef struct pieces {
 			int64_t dirty:1;			// 是否是脏数据
 			int64_t copy:1;				// 是否是copy数据,具体没想到怎么实现，主要用来省内存
 			int64_t data:1;				// 数据扩展（重要）
-			int64_t xxx:1;				// 
-			int64_t xx:1;				// 
-			int64_t timer:1;			// 是否具有定时任务
-			int64_t life:1;				// 是否具有有效期
+			int64_t dayreset:1;			// 重置
+			int64_t timer:1;			// 定时任务
+			int64_t life:1;				// 有效期
 			int64_t online:1;			// 下线消失
 			int64_t virtual:1;			// 虚拟物品
 			int64_t effected:1;			// 影响父节点（需要更新）
@@ -53,6 +52,7 @@ typedef struct pieces {
 			int64_t event:1;			// 事件监听中
 			int64_t redmark:1;			// 红点
 			int64_t root:1;				// 根
+			int64_t policy:1;			// 策略
 			int64_t born_time:30;		// 可以存放30年不溢出
 		} flag;
 		int64_t onlyId;
@@ -151,7 +151,8 @@ int get_pieces_flag(lua_State * L, const char* name, pieces * pi) {
 	define_pieces_flag_get(dirty)
 	define_pieces_flag_get(data)
 	define_pieces_flag_get(copy)
-	define_pieces_flag_get(mm)
+	define_pieces_flag_get(redmark)
+	define_pieces_flag_get(dayreset)
 	else {
 		lua_pushnil(L);
 	}

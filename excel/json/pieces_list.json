@@ -1,0 +1,17 @@
+{
+    "fields": [
+        {"name": "id", "type": "number"},
+        {"name": "name", "type": "string"},
+        {"name": "note", "type": "string"},
+        {"name": "type", "type": "number"},
+        {"name": "excel", "type": "string"},
+        {"name": "career", "type": "number[]"},
+        {"name": "life", "type": "number"},
+        {"name": "log", "type": "string"},
+        {"name": "redmark", "type": "number"},
+        {"name": "stringtest", "type": "string[]"}
+    ],
+    "files": [
+        "pieces/pieces_list"
+    ]
+}

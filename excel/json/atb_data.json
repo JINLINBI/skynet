@@ -3,7 +3,7 @@
         {"name": "id", "type": "number"},
         {"name": "text", "type": "string"},
         {"name": "parents", "type": "int[]"},
-        {"name": "maxNode", "type": "number"}
+        {"name": "maxNode", "type": "string[]"}
     ],
     "files": [
         "atb/atb_data_cmn",
