@@ -186,7 +186,8 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
 typedef struct rb_cjson_line {
 	unsigned long index;
 	struct rb_node rb_node;
-	cJSON * cjson_line_item;
+	cJSON * cjson_line_data;
+    cJSON * cjson_line_fields;
 } rb_cjson_line;
 
 typedef struct rb_cjson_root {

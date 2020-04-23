@@ -19,8 +19,10 @@ skynet.start(function()
     print("p.born_time is :" .. os.date("%Y-%m-%d %H:%M:%S", p.born_time));
     print("now is .." .. os.date("%Y-%m-%d %H:%M:%S", os.time()));
 
+    p.excel_id = 
 
-    skynet.fork(delay, p)
+    print("pieces.excel.name: " .. p.__excel.name)
+    -- skynet.fork(delay, p)
     -- for i, value in pairs(p.onlyId) do
     --     if type(value) == "number" or type(value) == "string" then
     --     	print("i: " .. i)

@@ -1,7 +1,7 @@
 {
     "fields": {
         "id": "number",
-        "text": "string",
+        "name": "string",
         "parents": "number[]",
         "maxNode": "string[]"
     },

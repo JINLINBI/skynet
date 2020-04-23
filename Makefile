@@ -1,9 +1,7 @@
 include platform.mk
 
 LUA_CLIB_PATH ?= luaclib
-LUA_CPPLIB_PATH ?= luacpplib
 CSERVICE_PATH ?= cservice
-CPPSERVICE_PATH ?= cppservice
 
 SKYNET_BUILD_PATH ?= .
 
@@ -51,10 +49,6 @@ all : cjson
 CJSON_STATICLIB := 3rd/cJSON/build/libcjson.so
 CJSON_INC := 3rd/cJSON
 CJSON := 3rd/cJSON/cJSON.c
-# $(CJSON_STATICLIB) :
-# 	mkdir 3rd/cJSON/build && cd 3rd/cJSON/build && cmake .. && make
-
-# cjson : $(CJSON_STATICLIB)
 
 # skynet
 
@@ -62,7 +56,6 @@ CSERVICE = snlua logger gate harbor excel
 LUA_CLIB = skynet \
   client \
   bson md5 sproto lpeg excel pieces
-# LUA_CPPLIB = pieces
 
 LUA_CLIB_SKYNET = \
   lua-skynet.c lua-seri.c \
@@ -92,7 +85,7 @@ all : \
 # $(foreach v, $(LUA_CPPLIB), $(LUA_CPPLIB_PATH)/$(v).so) 
 
 $(SKYNET_BUILD_PATH)/skynet : $(foreach v, $(SKYNET_SRC), skynet-src/$(v)) $(LUA_LIB) $(MALLOC_STATICLIB)
-	$(CC) $(CFLAGS) -o $@ $^ -Iskynet-src -I$(JEMALLOC_INC) $(LDFLAGS) $(EXPORT) $(SKYNET_LIBS) $(SKYNET_DEFINES) -I$(CJSON_INC)
+	$(CC) $(CFLAGS) -o $@ $^ -Iskynet-src -I$(JEMALLOC_INC) $(LDFLAGS) $(EXPORT) $(SKYNET_LIBS) $(SKYNET_DEFINES)
 
 $(LUA_CLIB_PATH) :
 	mkdir $(LUA_CLIB_PATH)
@@ -108,7 +101,7 @@ endef
 $(foreach v, $(CSERVICE), $(eval $(call CSERVICE_TEMP,$(v))))
 
 $(LUA_CLIB_PATH)/skynet.so : $(addprefix lualib-src/,$(LUA_CLIB_SKYNET)) | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -Iskynet-src -Iservice-src -Ilualib-src -I$(CJSON_INC)
+	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -Iskynet-src -Iservice-src -Ilualib-src
 
 $(LUA_CLIB_PATH)/bson.so : lualib-src/lua-bson.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src $^ -o $@ -Iskynet-src
@@ -120,20 +113,16 @@ $(LUA_CLIB_PATH)/client.so : lualib-src/lua-clientsocket.c lualib-src/lua-crypt.
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -lpthread
 
 $(LUA_CLIB_PATH)/excel.so : lualib-src/lua-excel.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src -I$(CJSON_INC) $(CJSON) $^ -o $@ -lpthread
+	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src -I$(CJSON_INC) $^ -o $@ -lpthread
 
-$(LUA_CLIB_PATH)/pieces.so : lualib-src/lua-pieces.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src $^ -o $@  -lmysqlclient
+$(LUA_CLIB_PATH)/pieces.so : lualib-src/lua-pieces.c lualib-src/lua-excel.c | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src $^ -I$(CJSON_INC) -o $@
 
 $(LUA_CLIB_PATH)/sproto.so : lualib-src/sproto/sproto.c lualib-src/sproto/lsproto.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -Ilualib-src/sproto $^ -o $@ 
 
 $(LUA_CLIB_PATH)/lpeg.so : 3rd/lpeg/lpcap.c 3rd/lpeg/lpcode.c 3rd/lpeg/lpprint.c 3rd/lpeg/lptree.c 3rd/lpeg/lpvm.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lpeg $^ -o $@ 
-
-# cpp so
-# $(LUA_CPPLIB_PATH)/pieces.so : | $(LUA_CPPLIB_PATH)
-# $(CPP) $(CPPFLAGS) $(SHARED) -Iskynet-src $^ -o $@ 
 
 clean :
 	rm -f $(SKYNET_BUILD_PATH)/skynet $(CSERVICE_PATH)/*.so $(LUA_CLIB_PATH)/*.so

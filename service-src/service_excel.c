@@ -98,13 +98,14 @@ excel_cb(struct skynet_context * context, void *ud, int type, int session, uint3
 }
 
 
-uint32_t create_rb_index_by_cjson(struct rb_root * root, cJSON * cjson_data) {
+uint32_t create_rb_index_by_cjson(struct rb_root * root, cJSON * cjson_data, cJSON * fields) {
 	uint32_t line_count = cJSON_GetArraySize(cjson_data);
 	for (int i = 0; i < line_count; i++) {
-		cJSON * cjson_line = cJSON_GetArrayItem(cjson_data, i);
+		cJSON * cjson_line_data = cJSON_GetArrayItem(cjson_data, i);
 		rb_cjson_line * line_node = skynet_malloc(sizeof(rb_cjson_line));
-		line_node->index = cJSON_GetArrayItem(cjson_line, 0)->valueint;
-		line_node->cjson_line_item = cjson_line;
+		line_node->index = cJSON_GetArrayItem(cjson_line_data, 0)->valueint;
+		line_node->cjson_line_data = cjson_line_data;
+		line_node->cjson_line_fields = fields;
 
 		rb_insert_cjson_line(root, line_node->index, &line_node->rb_node);
 	}
@@ -300,7 +301,7 @@ void parse_excel_root_json_data(struct excel* inst) {
 			inst->rb_cjson_files_root[i] = skynet_malloc(sizeof(struct rb_cjson_root));
 			memset(inst->rb_cjson_files_root[i], 0, sizeof(struct rb_cjson_root));
 			inst->rb_cjson_files_root[i]->name = skynet_strdup(excel_txt_cjson->string);
-			create_rb_index_by_cjson(&inst->rb_cjson_files_root[i]->rb_root, data);
+			create_rb_index_by_cjson(&inst->rb_cjson_files_root[i]->rb_root, data, fields);
 		}
 	}
 }

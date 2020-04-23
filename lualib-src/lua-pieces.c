@@ -14,124 +14,30 @@
 #include "skynet.h"
 #include "skynet_handle.h"
 #include "spinlock.h"
+#include "lua-pieces.h"
+#include "lua-excel.h"
 
 
-static MYSQL * pmysql = NULL;
-
-enum pieces_type {
-	user,
-	player,
-	role,
+// static MYSQL * pmysql = NULL;
+// lua-excel
+static luaL_Reg excel_list_func [] = {
+	{"__index", excel_list_index},
+	{"__pairs", excel_list_pairs},
+	{"__len", excel_list_len},
+	{NULL, NULL}
 };
 
-// 固定时间: 2019-12-29 18:48:05
-#define build_time 1577616485
+static luaL_Reg excel_line_func [] = {
+	{"__index", excel_line_index},
+	{"__pairs", excel_line_pairs},
+	{"__len", excel_line_len},
+	{"__tostring", excel_line_tostring},
+	{NULL, NULL}
+};
 
-
-typedef struct pieces_op pieces_operations;
-typedef struct pieces_link pieces_link;
-typedef struct pieces_data pieces_data;
-
-
-typedef struct pieces {
-	uint32_t excel_id;
-	union flags {
-		struct {
-			int64_t classify:6;			// 分类
-			int64_t rand:12;			// 随机数：每秒最多生成4096个uniq tag
-			int64_t dirty:1;			// 是否是脏数据
-			int64_t copy:1;				// 是否是copy数据,具体没想到怎么实现，主要用来省内存
-			int64_t data:1;				// 数据扩展（重要）
-			int64_t dayreset:1;			// 重置
-			int64_t timer:1;			// 定时任务
-			int64_t life:1;				// 有效期
-			int64_t online:1;			// 下线消失
-			int64_t virtual:1;			// 虚拟物品
-			int64_t effected:1;			// 影响父节点（需要更新）
-			int64_t excel:1;			// excel模板已动态修改
-			int64_t event:1;			// 事件监听中
-			int64_t redmark:1;			// 红点
-			int64_t root:1;				// 根
-			int64_t policy:1;			// 策略
-			int64_t born_time:30;		// 可以存放30年不溢出
-		} flag;
-		int64_t onlyId;
-	} flags;
-	pieces_link * link;
-}pieces;
-
-
-typedef struct pieces_op
-{
-	uint32_t (*init)(pieces* pi);
-	uint32_t (*attach)(pieces* pi, pieces * pi_attach);
-	uint32_t (*attach_by_type)(pieces* pi, uint32_t classify, uint32_t type);
-	uint32_t (*attach_by_onlyId)(pieces* pi, uint64_t onlyId);
-	uint32_t (*detach)(pieces* pi, pieces* pi_detach);
-	uint32_t (*detach_by_type)(pieces* pi, uint32_t classify, uint32_t type);
-	uint32_t (*detach_by_onlyId)(pieces* pi, uint64_t onlyId);
-	uint32_t (*detach_all)(pieces* pi);
-	uint32_t (*add)(pieces* pi, uint32_t copy, uint32_t parent);
-	uint32_t (*del)(pieces* pi, uint32_t copy, uint32_t parent);
-	uint32_t (*mod)(pieces* pi, uint32_t flag, uint32_t value);
-	uint32_t (*die)(pieces* pi);
-	uint32_t (*save)(pieces* pi);
-	uint32_t (*serialize)(pieces* pi, void *msg);
-	uint32_t (*unserialize)(pieces* pi, void *msg, uint32_t len);
-	uint32_t (*from)(pieces* pi, uint32_t excelId);
-	uint32_t (*load)(pieces* pi, uint64_t onlyId);
-	uint32_t (*update)(pieces* pi);
-	uint32_t (*change)(pieces* pi, uint32_t classify);
-	uint32_t (*tranlate)(pieces* pi, uint32_t type);
-} pieces_operations;
-
-typedef struct pieces_link
-{
-	pieces_data* prev;
-	pieces_data* next;
-} pieces_link;
-
-typedef struct pieces_data {
-	uint32_t date_type;
-	uint32_t data_len;
-	void * data;
-} pieces_data;
-
-
+static excel_service * inst = NULL;
 static pieces* root = NULL;
 static struct spinlock lock;
-
-
-static void stack_dump(lua_State* L){
-	int top = lua_gettop(L);
-	printf("get stack len: %d\n", top);
-	for (int i = 1; i <= top; i++){
-		int t = lua_type(L, i);
-		switch (t) {
-			case LUA_TSTRING: {
-				printf("'%s'", lua_tostring(L, i));
-				break;
-			}
-			case LUA_TBOOLEAN: {
-				printf("'%s'", lua_toboolean(L, i)? "true": "false");
-				break;
-			}
-			case LUA_TNUMBER: {
-				printf("'%g'", lua_tonumber(L, i));
-				break;
-			}
-			default: {
-				printf("'%s'", lua_typename(L, t));
-				break;
-			}
-		}
-
-		printf("\t");
-	}
-
-	printf(">>>>>>> returning ...\n");
-};
-
 
 #define define_pieces_flag_get(flag_arg) \
 	else if (strcmp(name, #flag_arg) == 0) { \
@@ -160,6 +66,18 @@ int get_pieces_flag(lua_State * L, const char* name, pieces * pi) {
 	return 1;
 }
 
+static int pieces_excel_index(lua_State * L, pieces * pi) {
+	rb_cjson_line * line = rb_search_cjson_line(&((inst->rb_cjson_files_root)[1]->rb_root), /* pi->excel_id*/ 2);
+	if (line) {
+		CreateExcelLineUserData(L, line->cjson_line_data, line->cjson_line_fields, /*pi->excel_id*/ 2, -1);
+	}
+	else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
 static int pieces_func(lua_State * L) {
 	const char* index_name = lua_tostring(L, -1);
 	lua_getfield(L, 1, "pieces_userdata");
@@ -168,11 +86,11 @@ static int pieces_func(lua_State * L) {
 		lua_pushnil(L);
 		return 0;
 	}
-	else if (strcmp(index_name, "excel") == 0) {
-		
+	else if (!strcmp(index_name, "excel")) {
+		pieces_excel_index(L, pi);
 	}
-	else if (strcmp(index_name, "__excel") == 0) {
-
+	else if (!strcmp(index_name, "__excel")) {
+		pieces_excel_index(L, pi);
 	}
 	else {
 		get_pieces_flag(L, index_name, pi);
@@ -185,21 +103,19 @@ static int pieces_save_func(lua_State * L) {
 	lua_getfield(L, 1, "pieces_userdata");
 	pieces * pi = (pieces*) lua_touserdata(L, -1);
 	if (pi == NULL) {
-		stack_dump(L);
-		lua_pushboolean(L, 0);
+		// lua_pushboolean(L, 0);
 		return 0;
 	}
 
-	stack_dump(L);
-	char sql_buffer[256];
-	memset(sql_buffer, 0, sizeof(sql_buffer));
-	sprintf(sql_buffer, "insert into pieces(id, excelId) values(%lu, %d)", pi->flags.onlyId, pi->excel_id);
+	// char sql_buffer[256];
+	// memset(sql_buffer, 0, sizeof(sql_buffer));
+	// sprintf(sql_buffer, "insert into pieces(id, excelId) values(%lu, %d)", pi->flags.onlyId, pi->excel_id);
 
-	printf("query mysql: %s\n", sql_buffer);
+	// printf("query mysql: %s\n", sql_buffer);
 
-	mysql_real_query(pmysql, sql_buffer, strlen(sql_buffer));
+	// mysql_real_query(pmysql, sql_buffer, strlen(sql_buffer));
 
-	lua_pushboolean(L, 1);
+	// lua_pushboolean(L, 1);
 
 
 	return 0;
@@ -262,20 +178,19 @@ luaopen_pieces(lua_State *L) {
 		{ "root", root_pieces},
 		{ NULL, NULL }
 	};
+
+	int excel_handle = skynet_handle_findname("excel");
+	struct skynet_context * excel_service = skynet_handle_grab(excel_handle);
+	if (excel_service == NULL){
+		return luaL_error(L, "Coundn't find excel service");
+	}
+
+	inst = excel_service->instance;
+
+	InitExcelListMetaTable(L);
+	init_excel_root(L, inst);
+
 	luaL_newlib(L, l);
-
-	
-	// pmysql = mysql_init(NULL);
-	// MYSQL * ret = mysql_real_connect(pmysql, "localhost", "dev", "123456", "dev", 0, NULL, 0);
-
-	// if (ret == NULL) {
-	// 	fprintf(stderr, "connect mysql error:%s \n", /* mysql_errno(pmysql),*/ mysql_error(pmysql));
-	// 	return -1;
-	// }
-	// else {
-	// 	fprintf(stdout, "connected mysql server.\n");
-	// }
-
 
 	return 1;
 }
