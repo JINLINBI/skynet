@@ -29,6 +29,7 @@ typedef struct excel_list {
 	cJSON * data;
 	cJSON * fields;
 	cJSON * files;
+	rb_cjson_root * rbtree_root;
 } excel_list;
 
 typedef struct excel_line {
@@ -94,66 +95,19 @@ static void CreateExcelLineUserData(lua_State *L, cJSON * data, cJSON * fields, 
 	lua_setmetatable(L, -2);
 }
 
-static void stack_dump(lua_State* L){
-	int top = lua_gettop(L);
-	for (int i = 1; i <= top; i++){
-		int t = lua_type(L, i);
-		switch (t){
-			case LUA_TSTRING: {
-				printf("'%s'", lua_tostring(L, i));
-				break;
-			}
-			case LUA_TBOOLEAN: {
-				printf("'%s'", lua_toboolean(L, i)? "true": "false");
-				break;
-			}
-			case LUA_TNUMBER: {
-				printf("'%g'", lua_tonumber(L, i));
-				break;
-			}
-			default: {
-				printf("'%s'", lua_typename(L, t));
-				break;
-			}
-		}
-
-		printf("\t");
-	}
-
-	printf(">>>>>>>\n");
-};
-
 static excel_service * inst = NULL;
 
 /////////////////////////////////////////////////////////////
 //  excel_list : start
 /////////////////////////////////////////////////////////////
-
 static int inner_excel_list_pairs(lua_State * L){
 	excel_list * data = (excel_list *) lua_touserdata(L, lua_upvalueindex(1));
 
-	int index = 0;
-	int start = 1;
-	if (!lua_isnil(L, 2)) {
-		index = luaL_checkinteger(L, 2);
-		start = 0;
-	}
-
-	// rbtree traversal
-	rb_cjson_line * line = NULL;
+	rb_cjson_line * line = rb_first_cjson_line(&data->rbtree_root->rb_root);
 	cJSON * item = cJSON_GetArrayItem(data->data, 0);
-	cJSON * id = cJSON_GetArrayItem(item, 0);
-	for (int i = 0; i < inst->filescount; i++) {
-		rb_cjson_root * root = inst->rb_cjson_files_root[i];
-		if (strcmp(root->name, data->name) == 0) {
-			if (start) {
-				line = rb_first_cjson_line(&root->rb_root);
-			}
-			else {
-				line = rb_next_cjson_by_index(&root->rb_root, index);
-			}
-			break;
-		}
+	if (!lua_isnil(L, 2)) {
+		int32_t index = luaL_checkinteger(L, 2);
+		line = rb_next_cjson_by_index(&data->rbtree_root->rb_root, index);
 	}
 
 	if (!line) {
@@ -163,7 +117,7 @@ static int inner_excel_list_pairs(lua_State * L){
 	}
 
 	item = line->cjson_line_item;
-	id = cJSON_GetArrayItem(item, 0);
+	cJSON * id = cJSON_GetArrayItem(item, 0);
 	CreateExcelLineUserData(L, item, data->fields, id->valueint, id->valueint);
 	return 2;
 }
@@ -189,37 +143,30 @@ static int excel_list_index(lua_State* L) {
 	excel_list * excel_list_data = (excel_list *) lua_touserdata(L, 1);
 	luaL_argcheck(L, excel_list_data != NULL, 1, "'excel_list_data' expected");
 
-	int data_index = (int) luaL_checkinteger(L, 2);
+	int index = (int) luaL_checkinteger(L, 2);
 
-	// 1.红黑数遍历
-	for (int i = 0; i < inst->filescount; i++) {
-		rb_cjson_root * root = inst->rb_cjson_files_root[i];
-		if (strcmp(root->name, excel_list_data->name) == 0) {
-			rb_cjson_line * line = rb_search_cjson_line(&root->rb_root, data_index);
-			if (line) {
-				CreateExcelLineUserData(L, line->cjson_line_item, excel_list_data->fields, data_index, -1);
-				goto out;
-			}
-			break;
-		}
+	rb_cjson_line * line = rb_search_cjson_line(&excel_list_data->rbtree_root->rb_root, index);
+	if (line) {
+		CreateExcelLineUserData(L, line->cjson_line_item, excel_list_data->fields, index, -1);
+	}
+	else {
+		lua_pushnil(L);
 	}
 
-	lua_pushnil(L);
-out:
 	return 1;
 }
 
 /////////////////////////////////////////////////////////////
 //  excel_line : start
 /////////////////////////////////////////////////////////////
-void parse_line_data(lua_State * L, cJSON * item, cJSON * type) {
+void parse_line_data(lua_State * L, cJSON * item, char * type) {
 	if (!item || !type) {
 		lua_pushnil(L);
 	}
-	else if (!strcmp(type->valuestring, "number")){
+	else if (!strcmp(type, "number")){
 		lua_pushinteger(L, item->valuedouble);
 	}
-	else if (!strcmp(type->valuestring, "number[]")){
+	else if (!strcmp(type, "number[]")){
 		int int_num = cJSON_GetArraySize(item);
 		int k = 0;
 		lua_newtable(L);
@@ -229,10 +176,10 @@ void parse_line_data(lua_State * L, cJSON * item, cJSON * type) {
 			lua_settable(L, -3);
 		}
 	}
-	else if (!strcmp(type->valuestring, "string")){
+	else if (!strcmp(type, "string")){
 		lua_pushstring(L, item->valuestring);
 	}
-	else if (!strcmp(type->valuestring, "string[]")){
+	else if (!strcmp(type, "string[]")){
 		int int_num = cJSON_GetArraySize(item);
 		int k = 0;
 		lua_newtable(L);
@@ -247,30 +194,6 @@ void parse_line_data(lua_State * L, cJSON * item, cJSON * type) {
 	}
 }
 
-void parse_line_index_data(lua_State * L, cJSON * items, cJSON * fields, cJSON * index) {
-    int itemscount = cJSON_GetArraySize(items);
-
-	int hit = 0;
-    for (int i = 0; i < itemscount; i++) {
-		cJSON * index_obj = cJSON_GetObjectItem(fields, "index");
-		if (cJSON_IsNull(index_obj) || cJSON_IsInvalid(index_obj))
-			return;
-
-		cJSON * name = cJSON_GetObjectItem(fields, "name");
-        if (strcmp(index->valuestring, name->valuestring) == 0) {
-			if (!hit) {
-				hit = 1;
-				lua_newtable(L);
-			}
-
-			cJSON * type = cJSON_GetObjectItem(fields, "type");
-			parse_line_data(L, cJSON_GetArrayItem(items, i), type);			
-			lua_pushinteger(L, index_obj->valueint);
-			lua_settable(L, -2);
-        }
-    }
-}
-
 static int inner_excel_line_pairs(lua_State* L) {
 	excel_line * data = (excel_line *) lua_touserdata(L, lua_upvalueindex(1));
 	uint32_t data_size = data->size;
@@ -280,32 +203,23 @@ static int inner_excel_line_pairs(lua_State* L) {
 	cJSON * col_data = cJSON_GetArrayItem(data->line_data, 0);
 	cJSON * fields = cJSON_GetArrayItem(data->line_fields, 0);
 
-	cJSON* type = cJSON_GetObjectItem(fields, "type");
-	cJSON* name = cJSON_GetObjectItem(fields, "name");
-
 	if (!lua_isnil(L, 2)) {
 		index_name = luaL_checkstring(L, 2);
-		for (int i = 0; i < data_size; i++) {
-			fields = cJSON_GetArrayItem(data->line_fields, i);
-			name = cJSON_GetObjectItem(fields, "name");
-			if (strcmp(name->valuestring, index_name) == 0) {
-				if (i + 1 >= data_size) {
-					lua_pushnil(L);
-					lua_pushnil(L);
-					return 2;
-				}
-				col_data = cJSON_GetArrayItem(data->line_data, i + 1);
-				fields = cJSON_GetArrayItem(data->line_fields, i + 1);
-				
-				name = cJSON_GetObjectItem(fields, "name");
-				type = cJSON_GetObjectItem(fields, "type");
-				break;
-			}
+
+
+		int32_t index = 0;
+		while (strcmp(cJSON_GetArrayItem(data->line_fields, index++)->string, index_name));
+		col_data = cJSON_GetArrayItem(data->line_data, index);
+		fields = cJSON_GetArrayItem(data->line_fields, index);
+		if (!fields) {
+			lua_pushnil(L);
+			lua_pushnil(L);
+			return 2;
 		}
 	}
 	
-	lua_pushstring(L, name->valuestring);
-	parse_line_data(L, col_data, type);
+	lua_pushstring(L, fields->string);
+	parse_line_data(L, col_data, fields->valuestring);
 	return 2;
 }
 
@@ -338,27 +252,17 @@ static int excel_line_tostring(lua_State* L) {
 }
 
 static int excel_line_index(lua_State* L) {
-	excel_line * excel_line_data = (excel_line *) lua_touserdata(L, 1);
-	luaL_argcheck(L, excel_line_data != NULL, 1, "'excel_line_data' expected");
+	excel_line * data = (excel_line *) lua_touserdata(L, 1);
+	luaL_argcheck(L, data != NULL, 1, "'data' expected");
 
-	const char * line_name = luaL_checkstring(L, 2);
-
-	lua_newtable(L);
-	if (cJSON_IsNull(excel_line_data->line_data) || cJSON_IsInvalid(excel_line_data->line_data)) {
-		lua_pushnil(L);
-		return 1;
-	}
-
-	for (int32_t i = 0; i < excel_line_data->size; i++) {
-		cJSON * fields = cJSON_GetArrayItem(excel_line_data->line_fields, i);
-		cJSON * name = cJSON_GetObjectItem(fields, "name");
-
-		if (strcmp(name->valuestring, line_name) == 0) {
-			cJSON * item = cJSON_GetArrayItem(excel_line_data->line_data, i);
-			cJSON * type = cJSON_GetObjectItem(fields, "type");
-			parse_line_data(L, item, type);
-			goto out;
-		}
+	const char * index_name = luaL_checkstring(L, 2);
+	cJSON* fields = cJSON_GetObjectItem(data->line_fields, index_name);
+	if (fields) {
+		int32_t index = 0;
+		while (strcmp(cJSON_GetArrayItem(data->line_fields, index)->string, index_name)) index++;
+		cJSON * item = cJSON_GetArrayItem(data->line_data, index);
+		parse_line_data(L, item, fields->valuestring);
+		goto out;
 	}
 
 	lua_pushnil(L);
@@ -389,6 +293,7 @@ luaopen_excel(lua_State *L) {
 	lua_newtable(L);
 
 	cJSON* cjson_excel_lists = cjson_root->child;
+	int32_t rbtree_root_index = 0;
 	while (cjson_excel_lists && !cJSON_IsNull(cjson_excel_lists)) {
 		struct excel_list* excel_list_data = (struct excel_list* ) lua_newuserdata(L, sizeof(struct excel_list));
 		char* excel_list_name = cjson_excel_lists->string;
@@ -396,6 +301,7 @@ luaopen_excel(lua_State *L) {
 		excel_list_data->fields = cJSON_GetObjectItem(cJSON_GetObjectItem(cjson_root, excel_list_name), "fields");
 		excel_list_data->data = cJSON_GetObjectItem(cJSON_GetObjectItem(cjson_root, excel_list_name), "data");
 		excel_list_data->line_size = cJSON_GetArraySize(excel_list_data->data);
+		excel_list_data->rbtree_root = inst->rb_cjson_files_root[rbtree_root_index++];
 
 		luaL_getmetatable(L, "excel_list_meta");
 		lua_setmetatable(L, -2);

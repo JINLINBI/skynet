@@ -148,8 +148,8 @@ void create_excel_root_json_struct(struct excel* inst) {
 				// json excel-desctription files save like this:
 				// {
 				//     "fields": [
-				//         {"name": "id", "type": "number"},
-				//         {"name": "name", "type": "string"},
+				//         {"id": "number"},
+				//         {"name": "string"},
 				//			...
 				//     ],
 				//     "files": [
@@ -190,7 +190,7 @@ void create_excel_root_json_struct(struct excel* inst) {
 				
 				cJSON* fields = cJSON_GetObjectItem(json_file, "fields");
 				cJSON* files = cJSON_GetObjectItem(json_file, "files");
-				if (cJSON_IsNull(json_file) || cJSON_IsNull(fields) || cJSON_IsNull(files)) {
+				if (!json_file || !fields || !files) {
 					goto out;
 				}
 
@@ -216,12 +216,11 @@ fileout:
 
 void trim(char* str) {
 	if (str == NULL) return;
-
 	for (int32_t i = strlen(str) - 1; i >= 0; i--) {
-		if (str[i] == '\r' || str[i] == '\n'){
+		if (str[i] == '\r' || str[i] == '\n') {
 			str[i] = '\0';
 		}
-		else{
+		else {
 			break;
 		}
 	}
@@ -264,15 +263,16 @@ void parse_excel_root_json_data(struct excel* inst) {
 				cJSON_AddItemToArray(data, excel_line_item);
 				char * token = NULL;
 				
-				for (int32_t col = 0; col < cJSON_GetArraySize(fields); col++) {
+				// begin parse data
+				for (int32_t field_index = 0; field_index < cJSON_GetArraySize(fields); field_index++) {
 					token = strsep(&line, "\t");
-					cJSON* col_item = cJSON_GetArrayItem(fields, col);
+					cJSON* fields_item = cJSON_GetArrayItem(fields, field_index);
 					cJSON* new_item = NULL;
-					if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "string")) {
+					if (!strcmp(fields_item->valuestring, "string")) {
 						trim(token);
 						new_item = cJSON_CreateString(token);
 					}
-					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "string[]")) {
+					else if (!strcmp(fields_item->valuestring, "string[]")) {
 						new_item = cJSON_CreateArray();
 						char* tmp = token;
 						for (char* t = strsep(&tmp, "*"); t != NULL; t = strsep(&tmp, "*")){
@@ -280,10 +280,10 @@ void parse_excel_root_json_data(struct excel* inst) {
 							cJSON_AddItemToArray(new_item, cJSON_CreateString(t));
 						}
 					}
-					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "number")) {
+					else if (!strcmp(fields_item->valuestring, "number")) {
 						new_item = cJSON_CreateNumber(strtold(token? token: "0", NULL));
 					}
-					else if (!strcmp(cJSON_GetObjectItem(col_item, "type")->valuestring, "number[]")) {
+					else if (!strcmp(fields_item->valuestring, "number[]")) {
 						new_item = cJSON_CreateArray();
 						char* tmp = token;
 						for (char* t = strsep(&tmp, "*"); t != NULL; t = strsep(&tmp, "*")){

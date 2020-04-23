@@ -1,16 +1,15 @@
 {
-    "fields": [
-        {"name": "id", "type": "number"},
-        {"name": "name", "type": "string"},
-        {"name": "note", "type": "string"},
-        {"name": "type", "type": "number"},
-        {"name": "excel", "type": "string"},
-        {"name": "career", "type": "number[]"},
-        {"name": "life", "type": "number"},
-        {"name": "log", "type": "string"},
-        {"name": "redmark", "type": "number"},
-        {"name": "stringtest", "type": "string[]"}
-    ],
+    "fields": {
+        "id": "number",
+        "name": "string",
+        "note": "string",
+        "type": "number",
+        "excel": "string",
+        "career": "number[]",
+        "life": "number",
+        "log": "string",
+        "redmark": "number"
+    },
     "files": [
         "pieces/pieces_list"
     ]

@@ -1,10 +1,10 @@
 {
-    "fields": [
-        {"name": "id", "type": "number"},
-        {"name": "text", "type": "string"},
-        {"name": "parents", "type": "number[]"},
-        {"name": "maxNode", "type": "string[]"}
-    ],
+    "fields": {
+        "id": "number",
+        "text": "string",
+        "parents": "number[]",
+        "maxNode": "string[]"
+    },
     "files": [
         "atb/atb_data_cmn",
         "atb/atb_data_player"
