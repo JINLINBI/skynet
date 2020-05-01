@@ -5,11 +5,6 @@ enum PiecesType {
 	USER = 1;
 };
 
-message PiecesBool {
-	int32 id = 1;
-	bool data = 2;
-};
-
 message PiecesInt32 {
 	int32 id = 1;
 	int32 data = 2;
@@ -20,10 +15,27 @@ message PiecesInt64 {
 	int64 data = 2;
 };
 
-message pieces_data {
-	repeated PiecesBool bool_data = 1;
-	repeated PiecesInt32 int32_data = 2;
-	repeated PiecesInt64 int64_data = 3;
+message PiecesString {
+	int32 id = 1;
+	string data = 2;
 };
 
+message PiecesExcelData {
+	string name = 1;								// excel field name
+	int64 number = 2;								// number data
+	string str = 3;									// string data
+	repeated int64 number_list = 4;					// number list data
+	repeated string str_list = 5;					// string list data
+};
 
+message PiecesFlagData {
+	repeated PiecesInt32 int32_data = 1;
+	repeated PiecesInt64 int64_data = 2;
+	repeated PiecesString string_data = 3;
+};
+
+message PiecesLink {
+	string data_type = 1;							// data name
+	uint64 next = 2;								// c pointer
+	repeated PiecesFlagData data = 3;				// data
+}

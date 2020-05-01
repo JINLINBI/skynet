@@ -3,6 +3,7 @@
 Skynet is a lightweight online game framework which can be used in many other fields.
 
 ## Build
+sudo apt install libmysqlclient-dev libprotobuf-c-dev:
 
 For Linux, install autoconf first for jemalloc:
 

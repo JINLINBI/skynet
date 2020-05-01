@@ -5,7 +5,9 @@ skynet.start(function()
 	local pieces_list = excel.pieces_list
 	-- print("helloowlll:\n " .. item[2].name)
 	local count = 1
+	print("total excel file: ", #excel)
 	for i, excel_list_file in pairs(excel) do
+		print("in file" .. i .. " total line: ", #excel_list_file)
 		for i, line in pairs(excel_list_file) do
 			print(">>>>>>>>>>>>>>>")
 			if line.name then
@@ -14,12 +16,13 @@ skynet.start(function()
 			if line.text then
 				print("line's name: " .. line.text)
 			end
+			print("total col: ", #line)
 			local count = 1
 			for key, value in pairs(line) do
 				if type(value) ~= "table" then
 					print(key .. ": " .. value)
 				else
-					for k, v in ipairs(value) do
+					for k, v in pairs(value) do
 						print("v: " .. v)
 					end
 					-- print("get table: " .. table.concat(value, ", "))

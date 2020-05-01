@@ -2,6 +2,8 @@ include platform.mk
 
 LUA_CLIB_PATH ?= luaclib
 CSERVICE_PATH ?= cservice
+PROTO-INC ?= proto-src
+PROTO-SRC ?= proto-src
 
 SKYNET_BUILD_PATH ?= .
 
@@ -85,7 +87,7 @@ all : \
 # $(foreach v, $(LUA_CPPLIB), $(LUA_CPPLIB_PATH)/$(v).so) 
 
 $(SKYNET_BUILD_PATH)/skynet : $(foreach v, $(SKYNET_SRC), skynet-src/$(v)) $(LUA_LIB) $(MALLOC_STATICLIB)
-	$(CC) $(CFLAGS) -o $@ $^ -Iskynet-src -I$(JEMALLOC_INC) $(LDFLAGS) $(EXPORT) $(SKYNET_LIBS) $(SKYNET_DEFINES)
+	$(CC) $(CFLAGS) -o $@ $^ -Iskynet-src -I$(JEMALLOC_INC) -I$(CJSON_INC) $(LDFLAGS) $(EXPORT) $(SKYNET_LIBS) $(SKYNET_DEFINES)
 
 $(LUA_CLIB_PATH) :
 	mkdir $(LUA_CLIB_PATH)
@@ -112,11 +114,11 @@ $(LUA_CLIB_PATH)/md5.so : 3rd/lua-md5/md5.c 3rd/lua-md5/md5lib.c 3rd/lua-md5/com
 $(LUA_CLIB_PATH)/client.so : lualib-src/lua-clientsocket.c lualib-src/lua-crypt.c lualib-src/lsha1.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -lpthread
 
-$(LUA_CLIB_PATH)/excel.so : lualib-src/lua-excel.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src -I$(CJSON_INC) $^ -o $@ -lpthread
+$(LUA_CLIB_PATH)/excel.so : lualib-src/lua-excel.c lualib-src/lua-pieces.c| $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src -I$(CJSON_INC) -I$(PROTO-INC) $^ -o $@ -lpthread
 
-$(LUA_CLIB_PATH)/pieces.so : lualib-src/lua-pieces.c lualib-src/lua-excel.c | $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src $^ -I$(CJSON_INC) -o $@
+$(LUA_CLIB_PATH)/pieces.so : lualib-src/lua-pieces.c lualib-src/lua-excel.c $(PROTO-SRC)/pieces.pb-c.c | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src $^ -I$(CJSON_INC) -I$(PROTO-INC) -o $@ -lprotobuf-c
 
 $(LUA_CLIB_PATH)/sproto.so : lualib-src/sproto/sproto.c lualib-src/sproto/lsproto.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -Ilualib-src/sproto $^ -o $@ 
