@@ -40,7 +40,8 @@ typedef struct pieces {
 		} pi_flag;
 		uint64_t only_id;
 	} flag;
-	PiecesLink* link;
+	void* link_data;
+	void* excel_data;
 }pieces;
 
 typedef union pieces_flag {

@@ -20,12 +20,16 @@ message PiecesString {
 	string data = 2;
 };
 
-message PiecesExcelData {
+message PiecesExcelDataItem {
 	string name = 1;								// excel field name
 	int64 number = 2;								// number data
 	string str = 3;									// string data
 	repeated int64 number_list = 4;					// number list data
 	repeated string str_list = 5;					// string list data
+};
+
+message PieceExcelData {
+	repeated PiecesExcelDataItem item = 1;			// excel data item list
 };
 
 message PiecesFlagData {
