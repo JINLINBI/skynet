@@ -76,7 +76,7 @@ int add_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, cJSO
 		if (pi->excel_data == NULL) {
 			return 0;
 		}
-		pi->flag.pi_flag.excel = 1;
+		pi->flag.pi_flag.is_excel = 1;
 	}
 
 	PieceExcelData* excel_data = (PieceExcelData*)pi->excel_data;
@@ -150,11 +150,12 @@ int get_pieces_flag(lua_State* L, const char* name, pieces* pi) {
 	else if (!strcmp(name, "build_time")) {
 		lua_pushinteger(L, BUILD_TIME);
 	}
-	define_pieces_flag_get(dirty)
-	define_pieces_flag_get(data)
-	define_pieces_flag_get(copy)
-	define_pieces_flag_get(redmark)
-	define_pieces_flag_get(dayreset)
+	define_pieces_flag_get(is_dirty)
+	define_pieces_flag_get(is_data)
+	define_pieces_flag_get(is_copy)
+	define_pieces_flag_get(is_redmark)
+	define_pieces_flag_get(is_dayreset)
+	define_pieces_flag_get(is_excel)
 	else {
 		lua_pushnil(L);
 	}
@@ -172,11 +173,12 @@ int set_pieces_flag(lua_State* L, const char* name, int64_t val, pieces* pi) {
 	else if (!strcmp(name, "born_time")) {
 		pi->flag.pi_flag.born_time = val - BUILD_TIME;
 	}
-	define_pieces_flag_set(dirty, val)
-	define_pieces_flag_set(data, val)
-	define_pieces_flag_set(copy, val)
-	define_pieces_flag_set(redmark, val)
-	define_pieces_flag_set(dayreset, val)
+	define_pieces_flag_set(is_dirty, val)
+	define_pieces_flag_set(is_data, val)
+	define_pieces_flag_set(is_copy, val)
+	define_pieces_flag_set(is_redmark, val)
+	define_pieces_flag_set(is_dayreset, val)
+	define_pieces_flag_set(is_excel, val)
 
 
 	return 0;
