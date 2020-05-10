@@ -7,7 +7,7 @@
         "excel": "string",
         "career": "number[]",
         "life": "number",
-        "log": "string",
+        "log": "string[]",
         "redmark": "number"
     },
     "files": [

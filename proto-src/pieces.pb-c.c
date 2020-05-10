@@ -7,139 +7,49 @@
 #endif
 
 #include "pieces.pb-c.h"
-void   pieces_int32__init
-                     (PiecesInt32         *message)
+void   pieces_flag_data_item__init
+                     (PiecesFlagDataItem         *message)
 {
-  static const PiecesInt32 init_value = PIECES_INT32__INIT;
+  static const PiecesFlagDataItem init_value = PIECES_FLAG_DATA_ITEM__INIT;
   *message = init_value;
 }
-size_t pieces_int32__get_packed_size
-                     (const PiecesInt32 *message)
+size_t pieces_flag_data_item__get_packed_size
+                     (const PiecesFlagDataItem *message)
 {
-  assert(message->base.descriptor == &pieces_int32__descriptor);
+  assert(message->base.descriptor == &pieces_flag_data_item__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t pieces_int32__pack
-                     (const PiecesInt32 *message,
+size_t pieces_flag_data_item__pack
+                     (const PiecesFlagDataItem *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &pieces_int32__descriptor);
+  assert(message->base.descriptor == &pieces_flag_data_item__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t pieces_int32__pack_to_buffer
-                     (const PiecesInt32 *message,
+size_t pieces_flag_data_item__pack_to_buffer
+                     (const PiecesFlagDataItem *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &pieces_int32__descriptor);
+  assert(message->base.descriptor == &pieces_flag_data_item__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-PiecesInt32 *
-       pieces_int32__unpack
+PiecesFlagDataItem *
+       pieces_flag_data_item__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (PiecesInt32 *)
-     protobuf_c_message_unpack (&pieces_int32__descriptor,
+  return (PiecesFlagDataItem *)
+     protobuf_c_message_unpack (&pieces_flag_data_item__descriptor,
                                 allocator, len, data);
 }
-void   pieces_int32__free_unpacked
-                     (PiecesInt32 *message,
+void   pieces_flag_data_item__free_unpacked
+                     (PiecesFlagDataItem *message,
                       ProtobufCAllocator *allocator)
 {
   if(!message)
     return;
-  assert(message->base.descriptor == &pieces_int32__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   pieces_int64__init
-                     (PiecesInt64         *message)
-{
-  static const PiecesInt64 init_value = PIECES_INT64__INIT;
-  *message = init_value;
-}
-size_t pieces_int64__get_packed_size
-                     (const PiecesInt64 *message)
-{
-  assert(message->base.descriptor == &pieces_int64__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t pieces_int64__pack
-                     (const PiecesInt64 *message,
-                      uint8_t       *out)
-{
-  assert(message->base.descriptor == &pieces_int64__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t pieces_int64__pack_to_buffer
-                     (const PiecesInt64 *message,
-                      ProtobufCBuffer *buffer)
-{
-  assert(message->base.descriptor == &pieces_int64__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-PiecesInt64 *
-       pieces_int64__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (PiecesInt64 *)
-     protobuf_c_message_unpack (&pieces_int64__descriptor,
-                                allocator, len, data);
-}
-void   pieces_int64__free_unpacked
-                     (PiecesInt64 *message,
-                      ProtobufCAllocator *allocator)
-{
-  if(!message)
-    return;
-  assert(message->base.descriptor == &pieces_int64__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
-void   pieces_string__init
-                     (PiecesString         *message)
-{
-  static const PiecesString init_value = PIECES_STRING__INIT;
-  *message = init_value;
-}
-size_t pieces_string__get_packed_size
-                     (const PiecesString *message)
-{
-  assert(message->base.descriptor == &pieces_string__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t pieces_string__pack
-                     (const PiecesString *message,
-                      uint8_t       *out)
-{
-  assert(message->base.descriptor == &pieces_string__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t pieces_string__pack_to_buffer
-                     (const PiecesString *message,
-                      ProtobufCBuffer *buffer)
-{
-  assert(message->base.descriptor == &pieces_string__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-PiecesString *
-       pieces_string__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (PiecesString *)
-     protobuf_c_message_unpack (&pieces_string__descriptor,
-                                allocator, len, data);
-}
-void   pieces_string__free_unpacked
-                     (PiecesString *message,
-                      ProtobufCAllocator *allocator)
-{
-  if(!message)
-    return;
-  assert(message->base.descriptor == &pieces_string__descriptor);
+  assert(message->base.descriptor == &pieces_flag_data_item__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 void   pieces_excel_data_item__init
@@ -187,6 +97,12 @@ void   pieces_excel_data_item__free_unpacked
   assert(message->base.descriptor == &pieces_excel_data_item__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   piece_excel_data__item_entry__init
+                     (PieceExcelData__ItemEntry         *message)
+{
+  static const PieceExcelData__ItemEntry init_value = PIECE_EXCEL_DATA__ITEM_ENTRY__INIT;
+  *message = init_value;
+}
 void   piece_excel_data__init
                      (PieceExcelData         *message)
 {
@@ -231,6 +147,12 @@ void   piece_excel_data__free_unpacked
     return;
   assert(message->base.descriptor == &piece_excel_data__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   pieces_flag_data__item_entry__init
+                     (PiecesFlagData__ItemEntry         *message)
+{
+  static const PiecesFlagData__ItemEntry init_value = PIECES_FLAG_DATA__ITEM_ENTRY__INIT;
+  *message = init_value;
 }
 void   pieces_flag_data__init
                      (PiecesFlagData         *message)
@@ -322,176 +244,62 @@ void   pieces_link__free_unpacked
   assert(message->base.descriptor == &pieces_link__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor pieces_int32__field_descriptors[2] =
+static const ProtobufCFieldDescriptor pieces_flag_data_item__field_descriptors[2] =
 {
   {
-    "id",
+    "number",
     1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    offsetof(PiecesInt32, id),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "data",
-    2,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    offsetof(PiecesInt32, data),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned pieces_int32__field_indices_by_name[] = {
-  1,   /* field[1] = data */
-  0,   /* field[0] = id */
-};
-static const ProtobufCIntRange pieces_int32__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 2 }
-};
-const ProtobufCMessageDescriptor pieces_int32__descriptor =
-{
-  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "PiecesInt32",
-  "PiecesInt32",
-  "PiecesInt32",
-  "",
-  sizeof(PiecesInt32),
-  2,
-  pieces_int32__field_descriptors,
-  pieces_int32__field_indices_by_name,
-  1,  pieces_int32__number_ranges,
-  (ProtobufCMessageInit) pieces_int32__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor pieces_int64__field_descriptors[2] =
-{
-  {
-    "id",
-    1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    offsetof(PiecesInt64, id),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "data",
-    2,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_INT64,
     0,   /* quantifier_offset */
-    offsetof(PiecesInt64, data),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned pieces_int64__field_indices_by_name[] = {
-  1,   /* field[1] = data */
-  0,   /* field[0] = id */
-};
-static const ProtobufCIntRange pieces_int64__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 2 }
-};
-const ProtobufCMessageDescriptor pieces_int64__descriptor =
-{
-  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "PiecesInt64",
-  "PiecesInt64",
-  "PiecesInt64",
-  "",
-  sizeof(PiecesInt64),
-  2,
-  pieces_int64__field_descriptors,
-  pieces_int64__field_indices_by_name,
-  1,  pieces_int64__number_ranges,
-  (ProtobufCMessageInit) pieces_int64__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
-static const ProtobufCFieldDescriptor pieces_string__field_descriptors[2] =
-{
-  {
-    "id",
-    1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    offsetof(PiecesString, id),
+    offsetof(PiecesFlagDataItem, number),
     NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "data",
+    "str",
     2,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(PiecesString, data),
+    offsetof(PiecesFlagDataItem, str),
     NULL,
     &protobuf_c_empty_string,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned pieces_string__field_indices_by_name[] = {
-  1,   /* field[1] = data */
-  0,   /* field[0] = id */
+static const unsigned pieces_flag_data_item__field_indices_by_name[] = {
+  0,   /* field[0] = number */
+  1,   /* field[1] = str */
 };
-static const ProtobufCIntRange pieces_string__number_ranges[1 + 1] =
+static const ProtobufCIntRange pieces_flag_data_item__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 2 }
 };
-const ProtobufCMessageDescriptor pieces_string__descriptor =
+const ProtobufCMessageDescriptor pieces_flag_data_item__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "PiecesString",
-  "PiecesString",
-  "PiecesString",
+  "PiecesFlagDataItem",
+  "PiecesFlagDataItem",
+  "PiecesFlagDataItem",
   "",
-  sizeof(PiecesString),
+  sizeof(PiecesFlagDataItem),
   2,
-  pieces_string__field_descriptors,
-  pieces_string__field_indices_by_name,
-  1,  pieces_string__number_ranges,
-  (ProtobufCMessageInit) pieces_string__init,
+  pieces_flag_data_item__field_descriptors,
+  pieces_flag_data_item__field_indices_by_name,
+  1,  pieces_flag_data_item__number_ranges,
+  (ProtobufCMessageInit) pieces_flag_data_item__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor pieces_excel_data_item__field_descriptors[5] =
+static const ProtobufCFieldDescriptor pieces_excel_data_item__field_descriptors[4] =
 {
-  {
-    "name",
-    1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_STRING,
-    0,   /* quantifier_offset */
-    offsetof(PiecesExcelDataItem, name),
-    NULL,
-    &protobuf_c_empty_string,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
   {
     "number",
-    2,
+    1,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_INT64,
     0,   /* quantifier_offset */
@@ -503,7 +311,7 @@ static const ProtobufCFieldDescriptor pieces_excel_data_item__field_descriptors[
   },
   {
     "str",
-    3,
+    2,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
@@ -515,7 +323,7 @@ static const ProtobufCFieldDescriptor pieces_excel_data_item__field_descriptors[
   },
   {
     "number_list",
-    4,
+    3,
     PROTOBUF_C_LABEL_REPEATED,
     PROTOBUF_C_TYPE_INT64,
     offsetof(PiecesExcelDataItem, n_number_list),
@@ -527,7 +335,7 @@ static const ProtobufCFieldDescriptor pieces_excel_data_item__field_descriptors[
   },
   {
     "str_list",
-    5,
+    4,
     PROTOBUF_C_LABEL_REPEATED,
     PROTOBUF_C_TYPE_STRING,
     offsetof(PiecesExcelDataItem, n_str_list),
@@ -539,16 +347,15 @@ static const ProtobufCFieldDescriptor pieces_excel_data_item__field_descriptors[
   },
 };
 static const unsigned pieces_excel_data_item__field_indices_by_name[] = {
-  0,   /* field[0] = name */
-  1,   /* field[1] = number */
-  3,   /* field[3] = number_list */
-  2,   /* field[2] = str */
-  4,   /* field[4] = str_list */
+  0,   /* field[0] = number */
+  2,   /* field[2] = number_list */
+  1,   /* field[1] = str */
+  3,   /* field[3] = str_list */
 };
 static const ProtobufCIntRange pieces_excel_data_item__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 5 }
+  { 0, 4 }
 };
 const ProtobufCMessageDescriptor pieces_excel_data_item__descriptor =
 {
@@ -558,11 +365,62 @@ const ProtobufCMessageDescriptor pieces_excel_data_item__descriptor =
   "PiecesExcelDataItem",
   "",
   sizeof(PiecesExcelDataItem),
-  5,
+  4,
   pieces_excel_data_item__field_descriptors,
   pieces_excel_data_item__field_indices_by_name,
   1,  pieces_excel_data_item__number_ranges,
   (ProtobufCMessageInit) pieces_excel_data_item__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor piece_excel_data__item_entry__field_descriptors[2] =
+{
+  {
+    "key",
+    1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_STRING,
+    0,   /* quantifier_offset */
+    offsetof(PieceExcelData__ItemEntry, key),
+    NULL,
+    &protobuf_c_empty_string,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "value",
+    2,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(PieceExcelData__ItemEntry, value),
+    &pieces_excel_data_item__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned piece_excel_data__item_entry__field_indices_by_name[] = {
+  0,   /* field[0] = key */
+  1,   /* field[1] = value */
+};
+static const ProtobufCIntRange piece_excel_data__item_entry__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor piece_excel_data__item_entry__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "PieceExcelData.ItemEntry",
+  "ItemEntry",
+  "PieceExcelData__ItemEntry",
+  "",
+  sizeof(PieceExcelData__ItemEntry),
+  2,
+  piece_excel_data__item_entry__field_descriptors,
+  piece_excel_data__item_entry__field_indices_by_name,
+  1,  piece_excel_data__item_entry__number_ranges,
+  (ProtobufCMessageInit) piece_excel_data__item_entry__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCFieldDescriptor piece_excel_data__field_descriptors[1] =
@@ -574,7 +432,7 @@ static const ProtobufCFieldDescriptor piece_excel_data__field_descriptors[1] =
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(PieceExcelData, n_item),
     offsetof(PieceExcelData, item),
-    &pieces_excel_data_item__descriptor,
+    &piece_excel_data__item_entry__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -603,54 +461,79 @@ const ProtobufCMessageDescriptor piece_excel_data__descriptor =
   (ProtobufCMessageInit) piece_excel_data__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor pieces_flag_data__field_descriptors[3] =
+static const ProtobufCFieldDescriptor pieces_flag_data__item_entry__field_descriptors[2] =
 {
   {
-    "int32_data",
+    "key",
+    1,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_INT32,
+    0,   /* quantifier_offset */
+    offsetof(PiecesFlagData__ItemEntry, key),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "value",
+    2,
+    PROTOBUF_C_LABEL_NONE,
+    PROTOBUF_C_TYPE_MESSAGE,
+    0,   /* quantifier_offset */
+    offsetof(PiecesFlagData__ItemEntry, value),
+    &pieces_flag_data_item__descriptor,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned pieces_flag_data__item_entry__field_indices_by_name[] = {
+  0,   /* field[0] = key */
+  1,   /* field[1] = value */
+};
+static const ProtobufCIntRange pieces_flag_data__item_entry__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor pieces_flag_data__item_entry__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "PiecesFlagData.ItemEntry",
+  "ItemEntry",
+  "PiecesFlagData__ItemEntry",
+  "",
+  sizeof(PiecesFlagData__ItemEntry),
+  2,
+  pieces_flag_data__item_entry__field_descriptors,
+  pieces_flag_data__item_entry__field_indices_by_name,
+  1,  pieces_flag_data__item_entry__number_ranges,
+  (ProtobufCMessageInit) pieces_flag_data__item_entry__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor pieces_flag_data__field_descriptors[1] =
+{
+  {
+    "item",
     1,
     PROTOBUF_C_LABEL_REPEATED,
     PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(PiecesFlagData, n_int32_data),
-    offsetof(PiecesFlagData, int32_data),
-    &pieces_int32__descriptor,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "int64_data",
-    2,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(PiecesFlagData, n_int64_data),
-    offsetof(PiecesFlagData, int64_data),
-    &pieces_int64__descriptor,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
-    "string_data",
-    3,
-    PROTOBUF_C_LABEL_REPEATED,
-    PROTOBUF_C_TYPE_MESSAGE,
-    offsetof(PiecesFlagData, n_string_data),
-    offsetof(PiecesFlagData, string_data),
-    &pieces_string__descriptor,
+    offsetof(PiecesFlagData, n_item),
+    offsetof(PiecesFlagData, item),
+    &pieces_flag_data__item_entry__descriptor,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
 static const unsigned pieces_flag_data__field_indices_by_name[] = {
-  0,   /* field[0] = int32_data */
-  1,   /* field[1] = int64_data */
-  2,   /* field[2] = string_data */
+  0,   /* field[0] = item */
 };
 static const ProtobufCIntRange pieces_flag_data__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 3 }
+  { 0, 1 }
 };
 const ProtobufCMessageDescriptor pieces_flag_data__descriptor =
 {
@@ -660,7 +543,7 @@ const ProtobufCMessageDescriptor pieces_flag_data__descriptor =
   "PiecesFlagData",
   "",
   sizeof(PiecesFlagData),
-  3,
+  1,
   pieces_flag_data__field_descriptors,
   pieces_flag_data__field_indices_by_name,
   1,  pieces_flag_data__number_ranges,

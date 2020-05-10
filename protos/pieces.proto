@@ -5,37 +5,24 @@ enum PiecesType {
 	USER = 1;
 };
 
-message PiecesInt32 {
-	int32 id = 1;
-	int32 data = 2;
-};
-
-message PiecesInt64 {
-	int32 id = 1;
-	int64 data = 2;
-};
-
-message PiecesString {
-	int32 id = 1;
-	string data = 2;
+message PiecesFlagDataItem {
+	int64 number = 1;
+	string str = 2;
 };
 
 message PiecesExcelDataItem {
-	string name = 1;								// excel field name
-	int64 number = 2;								// number data
-	string str = 3;									// string data
-	repeated int64 number_list = 4;					// number list data
-	repeated string str_list = 5;					// string list data
+	int64 number = 1;								// number data
+	string str = 2;									// string data
+	repeated int64 number_list = 3;					// number list data
+	repeated string str_list = 4;					// string list data
 };
 
 message PieceExcelData {
-	repeated PiecesExcelDataItem item = 1;			// excel data item list
+	map<string, PiecesExcelDataItem> item = 1;		// excel data item list
 };
 
 message PiecesFlagData {
-	repeated PiecesInt32 int32_data = 1;
-	repeated PiecesInt64 int64_data = 2;
-	repeated PiecesString string_data = 3;
+	map<int32, PiecesFlagDataItem> item = 1;
 };
 
 message PiecesLink {

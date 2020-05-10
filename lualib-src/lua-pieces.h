@@ -39,7 +39,7 @@ typedef struct pieces {
 		uint64_t only_id;
 	} flag;
 	void* link_data;
-	void* excel_data;
+	PieceExcelData* excel_data;
 }pieces;
 
 typedef struct pieces_op

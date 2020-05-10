@@ -23,40 +23,37 @@ static excel_service* inst = NULL;
 static pieces* root = NULL;
 static struct spinlock lock;
 
-int get_set_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, int32_t set, cJSON* line_fields) {
+int get_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, cJSON* line_fields) {
 	if (pi == NULL || !pi->excel_data) {
 		return 0;
 	}
 
 	PieceExcelData* excel_data = (PieceExcelData*) pi->excel_data;
 	for (int32_t i = 0; i < excel_data->n_item; i++) {
-		if (!strcmp(excel_data->item[i]->name, index_name)) {
-			// TODO: if is nil delete this item.
+		if (!strcmp(excel_data->item[i]->key, index_name)) {
+			PiecesExcelDataItem* excel_item = excel_data->item[i]->value;
 			cJSON* fields = cJSON_GetObjectItem(line_fields, index_name);
 			if (!strcmp(fields->valuestring, "number")) {
-				if (set) {
-					excel_data->item[i]->number = lua_tointeger(L, 3);
-				}
-				else {
-					lua_pushinteger(L, excel_data->item[i]->number);
-				}
+				lua_pushinteger(L, excel_item->number);
 			}
 			else if (!strcmp(fields->valuestring, "string")) {
-				if (set) {
-					skynet_free(excel_data->item[i]->str);
-					excel_data->item[i]->str = skynet_strdup(lua_tostring(L, 3));
-				}
-				else {
-					lua_pushstring(L, excel_data->item[i]->str);
-				}
+				lua_pushstring(L, excel_item->str? excel_item->str: "");
 			}
 			else if (!strcmp(fields->valuestring, "number[]")) {
-				// excel_data_item->str = skynet_strdup(lua_tostring(L, 3));
-				printf("unsupported type number[]\n");
+				lua_newtable(L);
+				for (int32_t index = 1; index <= excel_item->n_number_list; index++) {
+					lua_pushinteger(L, index);
+					lua_pushinteger(L, excel_item->number_list[index - 1]);
+					lua_settable(L, -3);
+				}
 			}
 			else if (!strcmp(fields->valuestring, "string[]")) {
-				// excel_data_item->str = skynet_strdup(lua_tostring(L, 3));
-				printf("unsupported type string[]\n");
+				lua_newtable(L);
+				for (int32_t index = 1; index <= excel_item->n_str_list; index++) {
+					lua_pushinteger(L, index);
+					lua_pushstring(L, excel_item->str_list[index - 1]);
+					lua_settable(L, -3);
+				}
 			}
 			return 1;
 		}
@@ -65,7 +62,99 @@ int get_set_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, 
 	return 0;
 }
 
+void add_pieces_excel_data_number_list(lua_State* L, PiecesExcelDataItem* excel_item) {
+	int32_t len = lua_rawlen(L, 3);
+	if (len <= 0) {
+		return;
+	}
+
+	excel_item->number_list = skynet_malloc(sizeof(void*) * len);
+	int index = lua_gettop(L);
+	int list_index = 0;
+	lua_pushnil(L);
+	while (lua_next(L, index)) {
+		/* 此时栈上 -1 处为 value, -2 处为 key */
+		excel_item->number_list[list_index++] = lua_tointeger(L, -1);
+		excel_item->n_number_list++;
+		lua_pop(L, 1);
+	}
+}
+
+
+void add_pieces_excel_data_string_list(lua_State* L, PiecesExcelDataItem* excel_item) {
+	int32_t len = lua_rawlen(L, 3);
+	if (len <= 0) {
+		return;
+	}
+
+	excel_item->str_list = skynet_malloc(sizeof(void*) * len);
+	int index = lua_gettop(L);
+	int list_index = 0;
+	lua_pushnil(L);
+	while (lua_next(L, index)) {
+		/* 此时栈上 -1 处为 value, -2 处为 key */
+		const char* value = lua_tostring(L, -1);
+		excel_item->str_list[list_index++] = skynet_strdup(value? value: "");
+		excel_item->n_str_list++;
+
+		lua_pop(L, 1);
+	}
+}
+
+int set_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, cJSON* line_fields) {
+	if (pi == NULL || !pi->excel_data) {
+		return 0;
+	}
+
+	PieceExcelData* excel_data = (PieceExcelData*) pi->excel_data;
+	for (int32_t i = 0; i < excel_data->n_item; i++) {
+		if (!strcmp(excel_data->item[i]->key, index_name)) {
+			PiecesExcelDataItem* excel_item = excel_data->item[i]->value;
+			if (lua_isnil(L, 3)) {
+				skynet_free(excel_data->item[i]->value);
+
+				while (i + 1 < excel_data->n_item) {
+					excel_data->item[i] = excel_data->item[i + 1];
+					i++;
+				}
+				excel_data->n_item--;
+				return 0;
+			}
+
+			cJSON* fields = cJSON_GetObjectItem(line_fields, index_name);
+			if (!strcmp(fields->valuestring, "number")) {
+				excel_item->number = lua_tointeger(L, 3);
+			}
+			else if (!strcmp(fields->valuestring, "string")) {
+				skynet_free(excel_item->str);
+				excel_item->str = skynet_strdup(lua_tostring(L, 3));
+			}
+			else if (!strcmp(fields->valuestring, "number[]")) {
+				if (lua_istable(L, 3)) {
+					excel_item->n_number_list = 0;
+					skynet_free(excel_item->number_list);
+					add_pieces_excel_data_number_list(L, excel_item);
+				}
+			}
+			else if (!strcmp(fields->valuestring, "string[]")) {
+				if (lua_istable(L, 3)) {
+					excel_item->n_str_list = 0;
+					skynet_free(excel_item->str_list);
+					add_pieces_excel_data_string_list(L, excel_item);
+				}
+			}
+			return 0;
+		}
+	}
+
+	return 0;
+}
+
 int add_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, cJSON* line_fields) {
+	if (lua_isnil(L, 3)) {
+		return 0;
+	}
+	
 	cJSON* fields = cJSON_GetObjectItem(line_fields, index_name);
 	if (fields == NULL) {
 		return 0;
@@ -73,21 +162,25 @@ int add_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, cJSO
 
 	if (pi->excel_data == NULL) {
 		pi->excel_data = skynet_malloc(sizeof(PieceExcelData));
+		piece_excel_data__init(pi->excel_data);
 		if (pi->excel_data == NULL) {
 			return 0;
 		}
 		pi->flag.pi_flag.is_excel = 1;
 	}
 
-	PieceExcelData* excel_data = (PieceExcelData*)pi->excel_data;
-	++excel_data->n_item;
-	excel_data->item = (PiecesExcelDataItem**)skynet_realloc(excel_data->item, sizeof(excel_data->n_item * sizeof(void*)));
+	pi->excel_data->n_item++;
+	pi->excel_data->item = skynet_realloc(pi->excel_data->item, pi->excel_data->n_item * sizeof(void*));
 	// TODO: NULL 
 
-	excel_data->item[excel_data->n_item - 1] = skynet_malloc(sizeof(PiecesExcelDataItem));
-	PiecesExcelDataItem* excel_data_item = excel_data->item[excel_data->n_item - 1];
+	pi->excel_data->item[pi->excel_data->n_item - 1] = skynet_malloc(sizeof(PieceExcelData__ItemEntry));
+	PieceExcelData__ItemEntry* excel_data_item_en = pi->excel_data->item[pi->excel_data->n_item - 1];
+	piece_excel_data__item_entry__init(excel_data_item_en);
+	excel_data_item_en->key = skynet_strdup(index_name);
+	excel_data_item_en->value = skynet_malloc(sizeof(PiecesExcelDataItem));
+
+	PiecesExcelDataItem* excel_data_item = excel_data_item_en->value;
 	pieces_excel_data_item__init(excel_data_item);
-	excel_data_item->name = skynet_strdup(index_name);
 	if (!strcmp(fields->valuestring, "number")) {
 		excel_data_item->number = lua_tointeger(L, 3);
 	}
@@ -95,15 +188,12 @@ int add_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, cJSO
 		excel_data_item->str = skynet_strdup(lua_tostring(L, 3));
 	}
 	else if (!strcmp(fields->valuestring, "number[]")) {
-		// excel_data_item->str = skynet_strdup(lua_tostring(L, 3));
-		printf("unsupported type number[]\n");
+		add_pieces_excel_data_number_list(L, excel_data_item);
 	}
 	else if (!strcmp(fields->valuestring, "string[]")) {
-		// excel_data_item->str = skynet_strdup(lua_tostring(L, 3));
-		printf("unsupported type string[]\n");
+		add_pieces_excel_data_string_list(L, excel_data_item);
 	}
 
-	// excel_data->item
 	return 0;
 }
 
@@ -118,7 +208,7 @@ int excel_line_newindex(lua_State* L) {
 		return 0;
 	}
 
-	if (get_set_pieces_excel_data(L, pi, index_name, 1, data->line_fields)) {
+	if (set_pieces_excel_data(L, pi, index_name, data->line_fields)) {
 		return 0;
 	}
 
@@ -137,7 +227,6 @@ int excel_line_newindex(lua_State* L) {
 	}
 
 int get_pieces_flag(lua_State* L, const char* name, pieces* pi) {
-
 	if (!strcmp(name, "excel_id")) {
 		lua_pushinteger(L, pi->excel_id);
 	}
@@ -179,7 +268,6 @@ int set_pieces_flag(lua_State* L, const char* name, int64_t val, pieces* pi) {
 	define_pieces_flag_set(is_redmark, val)
 	define_pieces_flag_set(is_dayreset, val)
 	define_pieces_flag_set(is_excel, val)
-
 
 	return 0;
 }

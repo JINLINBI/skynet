@@ -1,4 +1,4 @@
-id	string	int[]	string[]
-23	playertest	234*2.3	asdfkkaskdfjjajsdfjajsdfj*ajdsfjasdjfjasdjfjasdjfjasdfj
-35	中文测试	1s**42	中文测试*adfadsf*英文测试*不可能的时期
-56	dont@234&&9023**@))W you see	2*234324e10	34.0000001
+id	职业	生命值	攻击力	防御力
+23	剑士	123	12	123
+35	法师	132	234	132
+56	魔法师	142	1234	34

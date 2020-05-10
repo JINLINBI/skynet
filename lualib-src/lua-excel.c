@@ -246,7 +246,7 @@ int excel_line_index(lua_State* L) {
 	luaL_argcheck(L, data != NULL, 1, "'excel_line userdata' expected");
 
 	const char* index_name = luaL_checkstring(L, 2);
-	if (data->pi && get_set_pieces_excel_data(L, data->pi, index_name, 0, data->line_fields)) {
+	if (data->pi && get_pieces_excel_data(L, data->pi, index_name, data->line_fields)) {
 		return 1;
 	}
 

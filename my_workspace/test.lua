@@ -1,14 +1,11 @@
 local skynet = require("skynet")
-local excel = require("excel")
+local excel_list = require("excel")
 
-skynet.start(function()
+skynet.start(function(_, source, ...)
     skynet.error(" test servcice start...")
     --    local a = excel.atb_data[1]
-    print("type is : " .. type(excel))
-    if type(excel) == "string" then
-        print("string type: " .. excel)
-    end
-    for i, k in pairs(excel) do
-        print("i is " .. i .. " value : " .. k[0])
+    print("type is : " .. type(excel_list))
+    for i, excel in pairs(excel_list) do
+        print("i is " .. i .. " value : " .. excel[1].name)
     end
 end)

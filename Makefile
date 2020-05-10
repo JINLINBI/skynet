@@ -114,8 +114,8 @@ $(LUA_CLIB_PATH)/md5.so : 3rd/lua-md5/md5.c 3rd/lua-md5/md5lib.c 3rd/lua-md5/com
 $(LUA_CLIB_PATH)/client.so : lualib-src/lua-clientsocket.c lualib-src/lua-crypt.c lualib-src/lsha1.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) $^ -o $@ -lpthread
 
-$(LUA_CLIB_PATH)/excel.so : lualib-src/lua-excel.c lualib-src/lua-pieces.c| $(LUA_CLIB_PATH)
-	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src -I$(CJSON_INC) -I$(PROTO-INC) $^ -o $@ -lpthread
+$(LUA_CLIB_PATH)/excel.so : lualib-src/lua-excel.c lualib-src/lua-pieces.c $(PROTO-SRC)/pieces.pb-c.c | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src -I$(CJSON_INC) -I$(PROTO-INC) $^ -o $@ -lprotobuf-c
 
 $(LUA_CLIB_PATH)/pieces.so : lualib-src/lua-pieces.c lualib-src/lua-excel.c $(PROTO-SRC)/pieces.pb-c.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src $^ -I$(CJSON_INC) -I$(PROTO-INC) -o $@ -lprotobuf-c

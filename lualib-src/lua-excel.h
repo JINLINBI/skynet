@@ -54,5 +54,6 @@ void init_excel_root(lua_State* L, excel_service* inst);
 void stack_dump(lua_State* L);
 
 // pieces lib
-int get_set_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, int32_t set, cJSON* line_fields);
+int set_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, cJSON* line_fields);
+int get_pieces_excel_data(lua_State* L, pieces* pi, const char* index_name, cJSON* line_fields);
 #endif //__LUA_EXCEL_H__

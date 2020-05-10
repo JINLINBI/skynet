@@ -15,12 +15,12 @@ PROTOBUF_C__BEGIN_DECLS
 #endif
 
 
-typedef struct _PiecesInt32 PiecesInt32;
-typedef struct _PiecesInt64 PiecesInt64;
-typedef struct _PiecesString PiecesString;
+typedef struct _PiecesFlagDataItem PiecesFlagDataItem;
 typedef struct _PiecesExcelDataItem PiecesExcelDataItem;
 typedef struct _PieceExcelData PieceExcelData;
+typedef struct _PieceExcelData__ItemEntry PieceExcelData__ItemEntry;
 typedef struct _PiecesFlagData PiecesFlagData;
+typedef struct _PiecesFlagData__ItemEntry PiecesFlagData__ItemEntry;
 typedef struct _PiecesLink PiecesLink;
 
 
@@ -34,46 +34,20 @@ typedef enum _PiecesType {
 
 /* --- messages --- */
 
-struct  _PiecesInt32
+struct  _PiecesFlagDataItem
 {
   ProtobufCMessage base;
-  int32_t id;
-  int32_t data;
+  int64_t number;
+  char *str;
 };
-#define PIECES_INT32__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&pieces_int32__descriptor) \
-    , 0, 0 }
-
-
-struct  _PiecesInt64
-{
-  ProtobufCMessage base;
-  int32_t id;
-  int64_t data;
-};
-#define PIECES_INT64__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&pieces_int64__descriptor) \
-    , 0, 0 }
-
-
-struct  _PiecesString
-{
-  ProtobufCMessage base;
-  int32_t id;
-  char *data;
-};
-#define PIECES_STRING__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&pieces_string__descriptor) \
+#define PIECES_FLAG_DATA_ITEM__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&pieces_flag_data_item__descriptor) \
     , 0, (char *)protobuf_c_empty_string }
 
 
 struct  _PiecesExcelDataItem
 {
   ProtobufCMessage base;
-  /*
-   * excel field name
-   */
-  char *name;
   /*
    * number data
    */
@@ -95,7 +69,18 @@ struct  _PiecesExcelDataItem
 };
 #define PIECES_EXCEL_DATA_ITEM__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&pieces_excel_data_item__descriptor) \
-    , (char *)protobuf_c_empty_string, 0, (char *)protobuf_c_empty_string, 0,NULL, 0,NULL }
+    , 0, (char *)protobuf_c_empty_string, 0,NULL, 0,NULL }
+
+
+struct  _PieceExcelData__ItemEntry
+{
+  ProtobufCMessage base;
+  char *key;
+  PiecesExcelDataItem *value;
+};
+#define PIECE_EXCEL_DATA__ITEM_ENTRY__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&piece_excel_data__item_entry__descriptor) \
+    , (char *)protobuf_c_empty_string, NULL }
 
 
 struct  _PieceExcelData
@@ -105,26 +90,33 @@ struct  _PieceExcelData
    * excel data item list
    */
   size_t n_item;
-  PiecesExcelDataItem **item;
+  PieceExcelData__ItemEntry **item;
 };
 #define PIECE_EXCEL_DATA__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&piece_excel_data__descriptor) \
     , 0,NULL }
 
 
+struct  _PiecesFlagData__ItemEntry
+{
+  ProtobufCMessage base;
+  int32_t key;
+  PiecesFlagDataItem *value;
+};
+#define PIECES_FLAG_DATA__ITEM_ENTRY__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&pieces_flag_data__item_entry__descriptor) \
+    , 0, NULL }
+
+
 struct  _PiecesFlagData
 {
   ProtobufCMessage base;
-  size_t n_int32_data;
-  PiecesInt32 **int32_data;
-  size_t n_int64_data;
-  PiecesInt64 **int64_data;
-  size_t n_string_data;
-  PiecesString **string_data;
+  size_t n_item;
+  PiecesFlagData__ItemEntry **item;
 };
 #define PIECES_FLAG_DATA__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&pieces_flag_data__descriptor) \
-    , 0,NULL, 0,NULL, 0,NULL }
+    , 0,NULL }
 
 
 struct  _PiecesLink
@@ -149,62 +141,24 @@ struct  _PiecesLink
     , (char *)protobuf_c_empty_string, 0, 0,NULL }
 
 
-/* PiecesInt32 methods */
-void   pieces_int32__init
-                     (PiecesInt32         *message);
-size_t pieces_int32__get_packed_size
-                     (const PiecesInt32   *message);
-size_t pieces_int32__pack
-                     (const PiecesInt32   *message,
+/* PiecesFlagDataItem methods */
+void   pieces_flag_data_item__init
+                     (PiecesFlagDataItem         *message);
+size_t pieces_flag_data_item__get_packed_size
+                     (const PiecesFlagDataItem   *message);
+size_t pieces_flag_data_item__pack
+                     (const PiecesFlagDataItem   *message,
                       uint8_t             *out);
-size_t pieces_int32__pack_to_buffer
-                     (const PiecesInt32   *message,
+size_t pieces_flag_data_item__pack_to_buffer
+                     (const PiecesFlagDataItem   *message,
                       ProtobufCBuffer     *buffer);
-PiecesInt32 *
-       pieces_int32__unpack
+PiecesFlagDataItem *
+       pieces_flag_data_item__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   pieces_int32__free_unpacked
-                     (PiecesInt32 *message,
-                      ProtobufCAllocator *allocator);
-/* PiecesInt64 methods */
-void   pieces_int64__init
-                     (PiecesInt64         *message);
-size_t pieces_int64__get_packed_size
-                     (const PiecesInt64   *message);
-size_t pieces_int64__pack
-                     (const PiecesInt64   *message,
-                      uint8_t             *out);
-size_t pieces_int64__pack_to_buffer
-                     (const PiecesInt64   *message,
-                      ProtobufCBuffer     *buffer);
-PiecesInt64 *
-       pieces_int64__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   pieces_int64__free_unpacked
-                     (PiecesInt64 *message,
-                      ProtobufCAllocator *allocator);
-/* PiecesString methods */
-void   pieces_string__init
-                     (PiecesString         *message);
-size_t pieces_string__get_packed_size
-                     (const PiecesString   *message);
-size_t pieces_string__pack
-                     (const PiecesString   *message,
-                      uint8_t             *out);
-size_t pieces_string__pack_to_buffer
-                     (const PiecesString   *message,
-                      ProtobufCBuffer     *buffer);
-PiecesString *
-       pieces_string__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   pieces_string__free_unpacked
-                     (PiecesString *message,
+void   pieces_flag_data_item__free_unpacked
+                     (PiecesFlagDataItem *message,
                       ProtobufCAllocator *allocator);
 /* PiecesExcelDataItem methods */
 void   pieces_excel_data_item__init
@@ -225,6 +179,9 @@ PiecesExcelDataItem *
 void   pieces_excel_data_item__free_unpacked
                      (PiecesExcelDataItem *message,
                       ProtobufCAllocator *allocator);
+/* PieceExcelData__ItemEntry methods */
+void   piece_excel_data__item_entry__init
+                     (PieceExcelData__ItemEntry         *message);
 /* PieceExcelData methods */
 void   piece_excel_data__init
                      (PieceExcelData         *message);
@@ -244,6 +201,9 @@ PieceExcelData *
 void   piece_excel_data__free_unpacked
                      (PieceExcelData *message,
                       ProtobufCAllocator *allocator);
+/* PiecesFlagData__ItemEntry methods */
+void   pieces_flag_data__item_entry__init
+                     (PiecesFlagData__ItemEntry         *message);
 /* PiecesFlagData methods */
 void   pieces_flag_data__init
                      (PiecesFlagData         *message);
@@ -284,20 +244,20 @@ void   pieces_link__free_unpacked
                       ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
-typedef void (*PiecesInt32_Closure)
-                 (const PiecesInt32 *message,
-                  void *closure_data);
-typedef void (*PiecesInt64_Closure)
-                 (const PiecesInt64 *message,
-                  void *closure_data);
-typedef void (*PiecesString_Closure)
-                 (const PiecesString *message,
+typedef void (*PiecesFlagDataItem_Closure)
+                 (const PiecesFlagDataItem *message,
                   void *closure_data);
 typedef void (*PiecesExcelDataItem_Closure)
                  (const PiecesExcelDataItem *message,
                   void *closure_data);
+typedef void (*PieceExcelData__ItemEntry_Closure)
+                 (const PieceExcelData__ItemEntry *message,
+                  void *closure_data);
 typedef void (*PieceExcelData_Closure)
                  (const PieceExcelData *message,
+                  void *closure_data);
+typedef void (*PiecesFlagData__ItemEntry_Closure)
+                 (const PiecesFlagData__ItemEntry *message,
                   void *closure_data);
 typedef void (*PiecesFlagData_Closure)
                  (const PiecesFlagData *message,
@@ -312,12 +272,12 @@ typedef void (*PiecesLink_Closure)
 /* --- descriptors --- */
 
 extern const ProtobufCEnumDescriptor    pieces_type__descriptor;
-extern const ProtobufCMessageDescriptor pieces_int32__descriptor;
-extern const ProtobufCMessageDescriptor pieces_int64__descriptor;
-extern const ProtobufCMessageDescriptor pieces_string__descriptor;
+extern const ProtobufCMessageDescriptor pieces_flag_data_item__descriptor;
 extern const ProtobufCMessageDescriptor pieces_excel_data_item__descriptor;
 extern const ProtobufCMessageDescriptor piece_excel_data__descriptor;
+extern const ProtobufCMessageDescriptor piece_excel_data__item_entry__descriptor;
 extern const ProtobufCMessageDescriptor pieces_flag_data__descriptor;
+extern const ProtobufCMessageDescriptor pieces_flag_data__item_entry__descriptor;
 extern const ProtobufCMessageDescriptor pieces_link__descriptor;
 
 PROTOBUF_C__END_DECLS
