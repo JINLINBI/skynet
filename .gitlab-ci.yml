@@ -2,3 +2,5 @@ image: "pieces:0.1"
 
 before_script:
     - echo "hell"
+test:
+    - echo "test ci/cd"
