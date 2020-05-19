@@ -1,0 +1,4 @@
+image: "pieces:0.1"
+
+before_script:
+    - echo "hell"
