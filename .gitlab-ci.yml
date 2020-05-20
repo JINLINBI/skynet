@@ -11,7 +11,9 @@ test:
 
 build:
     stage: build
-    script: echo "Building the app"
+    script: 
+        - echo "Building the app"
+        - make linux
 
 deploy_staging:
     stage: deploy
