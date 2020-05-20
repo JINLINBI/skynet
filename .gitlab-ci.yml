@@ -5,6 +5,8 @@ stages:
 
 test:
     stage: test
+    only:
+        - master
     script: echo "Running tests"
 
 build:
