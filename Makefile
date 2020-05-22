@@ -20,7 +20,13 @@ LUA_INC ?= 3rd/lua
 $(LUA_STATICLIB) :
 	cd 3rd/lua && $(MAKE) CC='$(CC) -std=gnu99' $(PLAT)
 
-# jemalloc 
+# https : turn on TLS_MODULE to add https support
+
+# TLS_MODULE=ltls
+TLS_LIB=
+TLS_INC=
+
+# jemalloc
 
 JEMALLOC_STATICLIB := 3rd/jemalloc/lib/libjemalloc_pic.a
 JEMALLOC_INC := 3rd/jemalloc/include/jemalloc
@@ -38,7 +44,7 @@ $(JEMALLOC_STATICLIB) : 3rd/jemalloc/Makefile
 	git submodule update --init
 
 3rd/jemalloc/Makefile : | 3rd/jemalloc/autogen.sh
-	cd 3rd/jemalloc && ./autogen.sh --with-jemalloc-prefix=je_ --disable-valgrind
+	cd 3rd/jemalloc && ./autogen.sh --with-jemalloc-prefix=je_ --enable-prof
 
 jemalloc : $(MALLOC_STATICLIB)
 
@@ -57,7 +63,7 @@ CJSON := 3rd/cJSON/cJSON.c
 CSERVICE = snlua logger gate harbor excel
 LUA_CLIB = skynet \
   client \
-  bson md5 sproto lpeg excel pieces
+  bson md5 sproto lpeg excel pieces $(TLS_MODULE)
 
 LUA_CLIB_SKYNET = \
   lua-skynet.c lua-seri.c \
@@ -73,6 +79,7 @@ LUA_CLIB_SKYNET = \
   lua-stm.c \
   lua-debugchannel.c \
   lua-datasheet.c \
+  lua-sharetable.c \
   \
 
 SKYNET_SRC = skynet_main.c skynet_handle.c skynet_module.c skynet_mq.c \
@@ -122,6 +129,9 @@ $(LUA_CLIB_PATH)/pieces.so : lualib-src/lua-pieces.c lualib-src/lua-excel.c $(PR
 
 $(LUA_CLIB_PATH)/sproto.so : lualib-src/sproto/sproto.c lualib-src/sproto/lsproto.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -Ilualib-src/sproto $^ -o $@ 
+
+$(LUA_CLIB_PATH)/ltls.so : lualib-src/ltls.c | $(LUA_CLIB_PATH)
+	$(CC) $(CFLAGS) $(SHARED) -Iskynet-src -L$(TLS_LIB) -I$(TLS_INC) $^ -o $@ -lssl
 
 $(LUA_CLIB_PATH)/lpeg.so : 3rd/lpeg/lpcap.c 3rd/lpeg/lpcode.c 3rd/lpeg/lpprint.c 3rd/lpeg/lptree.c 3rd/lpeg/lpvm.c | $(LUA_CLIB_PATH)
 	$(CC) $(CFLAGS) $(SHARED) -I3rd/lpeg $^ -o $@ 
