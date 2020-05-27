@@ -7,3 +7,6 @@
 [submodule "3rd/cJSON"]
 	path = 3rd/cJSON
 	url = https://github.com/DaveGamble/cJSON.git
+[submodule "skynet"]
+	path = skynet
+	url = https://github.com/cloudwu/skynet.git
