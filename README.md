@@ -1,41 +1,25 @@
-Skynet is a lightweight online game framework which can be used in many other fields.
 
-## Build
-sudo apt install libmysqlclient-dev libprotobuf-c-dev:
+### Build Dependency
+sudo apt install libprotobuf-c-dev autoconf libreadline-dev
 
-For Linux, install autoconf first for jemalloc:
-
+### Update Git 3rd Submodules && Patch Skynet Witch Excel C Services
+``` shell
+$ git submodule update --init
+$ cd skynet
+$ git apply ../patches/skynet_load_excel.patch
+$ cd ..
 ```
-git clone https://github.com/cloudwu/skynet.git
-cd skynet
-make 'PLATFORM'  # PLATFORM can be linux, macosx, freebsd now
-```
-
-Or:
-
-```
-export PLAT=linux
-make
+### Build Project
+``` shell
+$ ./build.sh
 ```
 
-For FreeBSD , use gmake instead of make.
 
-## Test
-
-Run these in different consoles:
-
-```
-./skynet examples/config	# Launch first skynet node  (Gate server) and a skynet-master (see config for standalone option)
-./3rd/lua/lua examples/client.lua 	# Launch a client, and try to input hello.
+### Start Server
+``` shell
+$ bin/start.sh
+or
+$ cd bin/
+$ ./start
 ```
 
-## About Lua version
-
-Skynet now uses a modified version of lua 5.3.5 ( https://github.com/ejoy/lua/tree/skynet ) for multiple lua states.
-
-Official Lua versions can also be used as long as the Makefile is edited.
-
-## How To Use (Sorry, currently only available in Chinese)
-
-* Read Wiki for documents https://github.com/cloudwu/skynet/wiki
-* The FAQ in wiki https://github.com/cloudwu/skynet/wiki/FAQ

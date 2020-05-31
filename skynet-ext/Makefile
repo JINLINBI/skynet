@@ -14,9 +14,9 @@ CPPFLAGS = -g -Wall -I$(LUA_INC) $(MYCFLAGS)
 
 # lua
 
-LUA_STATICLIB := ../3rd/lua/liblua.a
+LUA_STATICLIB := $(SKYNET_BUILD_PATH)/3rd/lua/liblua.a
 LUA_LIB ?= $(LUA_STATICLIB)
-LUA_INC ?= ../3rd/lua
+LUA_INC ?= $(SKYNET_BUILD_PATH)/3rd/lua
 
 	
 all : cjson
@@ -48,8 +48,8 @@ $(CSERVICE_PATH) :
 	mkdir $(CSERVICE_PATH)
 
 define CSERVICE_TEMP
-  $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c $(UTILS_INC)/rbtree.c | $$(CSERVICE_PATH)
-	$$(CC) $$(CFLAGS) $$(SHARED) $(CJSON) $$< -o $$@ -I$(SKYNET_INC) -I$(CJSON_INC) -I$(SKYNET_BUILD_PATH)/lualib-src -I$(UTILS_INC)
+  $$(CSERVICE_PATH)/$(1).so : service-src/service_$(1).c | $$(CSERVICE_PATH)
+	$$(CC) $$(CFLAGS) $$(SHARED) $(CJSON) $(UTILS_INC)/rbtree.c $$< -o $$@ -I$(SKYNET_INC) -I$(CJSON_INC) -I$(SKYNET_BUILD_PATH)/lualib-src -I$(UTILS_INC)
 endef
 
 $(foreach v, $(CSERVICE), $(eval $(call CSERVICE_TEMP,$(v))))

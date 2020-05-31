@@ -1,0 +1,45 @@
+diff --git a/skynet-src/skynet_imp.h b/skynet-src/skynet_imp.h
+index eef5d50..c8e8107 100644
+--- a/skynet-src/skynet_imp.h
++++ b/skynet-src/skynet_imp.h
+@@ -10,6 +10,8 @@ struct skynet_config {
+ 	const char * bootstrap;
+ 	const char * logger;
+ 	const char * logservice;
++	const char * excel;
++	const char * excelservice;
+ };
+ 
+ #define THREAD_WORKER 0
+diff --git a/skynet-src/skynet_main.c b/skynet-src/skynet_main.c
+index a96c312..fd8519b 100644
+--- a/skynet-src/skynet_main.c
++++ b/skynet-src/skynet_main.c
+@@ -160,6 +160,8 @@ main(int argc, char *argv[]) {
+ 	config.logger = optstring("logger", NULL);
+ 	config.logservice = optstring("logservice", "logger");
+ 	config.profile = optboolean("profile", 1);
++	config.excelservice = optstring("excelservice", "excel");
++	config.excel = optstring("excel", "excel");
+ 
+ 	lua_close(L);
+ 
+diff --git a/skynet-src/skynet_start.c b/skynet-src/skynet_start.c
+index b299103..b2bd5de 100644
+--- a/skynet-src/skynet_start.c
++++ b/skynet-src/skynet_start.c
+@@ -266,6 +266,14 @@ skynet_start(struct skynet_config * config) {
+ 	skynet_socket_init();
+ 	skynet_profile_enable(config->profile);
+ 
++	struct skynet_context *excel_ctx = skynet_context_new(config->excelservice, config->excel);
++	if (excel_ctx == NULL) {
++		fprintf(stderr, "Can't init %s service\n", config->excelservice);
++		exit(1);
++	}
++
++	skynet_handle_namehandle(skynet_context_handle(excel_ctx), "excel");
++
+ 	struct skynet_context *ctx = skynet_context_new(config->logservice, config->logger);
+ 	if (ctx == NULL) {
+ 		fprintf(stderr, "Can't launch %s service\n", config->logservice);

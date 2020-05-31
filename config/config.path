@@ -1,7 +1,0 @@
-skynet_root = "./skynet/"
-skynet_ext_root = "./skynet-ext/"
-luaservice = skynet_root.."service/?.lua;"..skynet_root.."test/?.lua;"..skynet_root.."examples/?.lua;"..skynet_root.."test/?/init.lua;"..skynet_root.."examples/login/?.lua"
-lualoader = skynet_root .. "lualib/loader.lua"
-lua_path = skynet_root.."lualib/?.lua;"..skynet_root.."lualib/?/init.lua"
-lua_cpath = skynet_root .. "luaclib/?.so;" .. skynet_ext_root .. "luaclib/?.so"
-snax = skynet_root.."examples/?.lua;"..skynet_root.."test/?.lua"
