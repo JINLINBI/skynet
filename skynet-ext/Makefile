@@ -6,7 +6,7 @@ LUA_CLIB_PATH ?= luaclib
 CSERVICE_PATH ?= cservice
 PROTO_INC ?= ../proto-src
 PROTO_SRC ?= ../proto-src
-UTILS_INC ?= ../utils
+UTILS_INC ?= ../3rd/utils
 
 CFLAGS = -g -Wall -I$(LUA_INC) $(MYCFLAGS)
 CPPFLAGS = -g -Wall -I$(LUA_INC) $(MYCFLAGS)
