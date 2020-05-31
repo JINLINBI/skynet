@@ -3,12 +3,14 @@ stages:
     - build
     - deploy
 
+before_script:
+    - git submodule update --init
+    - cd skynet
+    - git apply ../patches/skynet_load_excel.patch
+
 test:
     stage: test
     script: echo "Running tests"
-		- git submodule update --init
-		- cd skynet
-		- git apply ../patches/skynet_load_excel.patch
 
 build:
     stage: build
