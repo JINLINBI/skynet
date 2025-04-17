@@ -179,6 +179,7 @@ end
 
 function COMMAND.clearcache()
 	codecache.clear()
+	skynet.send("hotupdate", "lua")
 end
 
 function COMMAND.start(...)

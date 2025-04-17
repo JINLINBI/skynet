@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message PlayerData {
+    int64 playerId = 1;
+    string name = 2;
+}
+
+
+message LoginReq_1001 {
+    string account = 1;
+    string passwd = 2;
+    int32 result = 3;
+    PlayerData player = 4;
+}
+
+message LoginResp_1001 {
+    int32 msg = 1;
+}
+

@@ -46,5 +46,6 @@ if LUA_PRELOAD then
 end
 
 _G.require = (require "skynet.require").require
+-- _G.import = (require "import").import
 
 main(select(2, table.unpack(args)))

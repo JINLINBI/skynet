@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+
+message LoginReq_1001 {
+    string account = 1;
+    string passwd = 2;
+    int32 result = 3;
+}
+
+message LoginResp_1001 {
+    int32 msg = 1;
+}
+
+
+message GetReq_1002 {
+    string msg = 1;
+}
+
+message GetResp_1002 {
+    string msg = 1;
+}
+
+message SetReq_1003 {
+    string what = 1;
+    string value = 2;
+}
+
+message SetResp_1003 {
+    string msg = 1;
+}
+
+message HandshakeReq_1004 {
+    string msg = 1;
+}
+
+message HandshakeResp_1004 {
+    string msg = 1;
+}
+
+message HeartBeatReq_1004 {
+    string msg = 1;
+}
+
+message HeartBeatResp_1004 {
+    string msg = 1;
+}

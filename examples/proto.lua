@@ -32,6 +32,12 @@ set 3 {
 
 quit 4 {}
 
+test 5 {
+	request {
+		what 0 : string
+		value 1 : string
+	}
+}
 ]]
 
 proto.s2c = sprotoparser.parse [[
