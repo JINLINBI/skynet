@@ -37,10 +37,22 @@ message HandshakeResp_1004 {
     string msg = 1;
 }
 
-message HeartBeatReq_1004 {
+message HeartBeatReq_1005 {
     string msg = 1;
 }
 
-message HeartBeatResp_1004 {
+message HeartBeatResp_1005 {
     string msg = 1;
+}
+
+message TestReq_1006 {
+    string what = 1;
+    string value = 2;
+    string new = 3;
+}
+
+message TestResp_1006 {
+    string what = 1;
+    string value = 2;
+    string new = 3;
 }

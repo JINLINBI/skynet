@@ -1,34 +1,24 @@
-package.cpath = "luaclib/?.so;myluaclib/?.lua"
-package.path = "lualib/?.lua;examples/?.lua;mylualib/?.lua"
+package.cpath = "luaclib/?.so;myluaclib/?.so;lua_modules/lib/lua/5.4/?.so"
+package.path = "lualib/?.lua;examples/?.lua;mylualib/?.lua;lua_modules/share/lua/5.4/?.lua"
 
 if _VERSION ~= "Lua 5.4" then
 	error "Use lua 5.4"
 end
 
 local socket = require "client.socket"
-local protobuf = require "pb"
-local inspect = require "inspect"
-local pb = require "mypb"
-local cjson = require "cjson.util"
-
+local pb = require "protobuf"
 local targetFile = "proto/msg.proto"
 
-pb.LoadProtoFile(targetFile)
-pb.ParseProtoFile(targetFile)
+pb.load(targetFile)
 
--- for k, v in protobuf.types() do
--- 	print("k", k, "v", v, "type", type(v))
--- 	for k, v in protobuf.fields(v) do
--- 		print(k, v)
--- 	end
--- end
-function string_to_hex(str)
-    local hex = {}
-    for i = 1, #str do
-        local byte = string.byte(str, i)
-        hex[i] = string.format("%02X", byte)  -- %02X 确保两位大写十六进制
-    end
-    return print(table.concat(hex, " "))  -- 可选空格分隔
+
+function stringToHex(str)
+	local hex = {}
+	for i = 1, #str do
+		local byte = string.byte(str, i)
+		hex[i] = string.format("%02X", byte) -- %02X 确保两位大写十六进制
+	end
+	return print(table.concat(hex, " "))     -- 可选空格分隔
 end
 
 -- 示例：输出 "Hello" 的十六进制表示（48 65 6C 6C 6F）
@@ -44,13 +34,13 @@ end
 
 local fd = assert(socket.connect("127.0.0.1", 8888))
 
-local function send_package(fd, msgName, msgData)
-	print("fd", fd, "msgName", msgName, "msgData", msgData)
-	local msgId, encodeData = pb.PbEncodeClt(msgName, msgData or {})
-	print("pbdata len", #encodeData)
-	local package = string.pack(">HI", #encodeData + 4, msgId) .. (encodeData or "")
+local function send_package(sname, msg)
+	print("fd", fd, "msgName", sname, "msgData", msg)
+	local id, data = pb.encodeClt(sname, msg or {})
+	print("pbdata len", #data)
+	local package = string.pack(">HI", #data + 4, id) .. (data or "")
 	print("finallen", #package)
-	string_to_hex(package)
+	stringToHex(package)
 	socket.send(fd, package)
 end
 
@@ -88,7 +78,7 @@ local session = 0
 local function send_request(name, args)
 	session = session + 1
 	-- local str = request(name, args, session)
-	send_package(fd, name, args)
+	send_package(name, args)
 	print("Request:", session)
 end
 
@@ -124,7 +114,7 @@ end
 local function UnpackData(msgStr)
 	print("msglen", #msgStr)
 	local msgId, pos = string.unpack(">I", msgStr)
-	local msgName, pbData = pb.PbDecodeClt(msgId, msgStr:sub(pos))
+	local msgName, pbData = pb.decodeClt(msgId, msgStr:sub(pos))
 	print("msgName", msgName, "pbData", pbData, "pbData.msg", pbData.msg)
 	print("msgId", msgId, "pbStr", pbData, "pos", pos, msgName)
 	return msgName, pbData
@@ -146,6 +136,7 @@ end
 send_request("Handshake", { msg = "test" })
 -- send_request("Set", { msg = "test" })
 send_request("Set", { what = "hello", value = "world" })
+send_request("Test", { what = "hello", value = "world" })
 while true do
 	dispatch_package()
 	local cmd = socket.readstdin()
@@ -153,7 +144,8 @@ while true do
 		if cmd == "quit" then
 			send_request("quit")
 		else
-			send_request("test", { what = cmd })
+			-- send_request("test", { what = cmd })
+			send_request("Test", { what = "hello", value = "world", new = "something new" })
 		end
 	else
 		socket.usleep(100)

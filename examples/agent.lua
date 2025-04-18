@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local inspect = require "inspect"
 local socket = require "skynet.socket"
 
-local pb = require "mypb"
+local pb = require "protobuf"
 
 local testhotupdate = import("testhotupdate")
 
@@ -35,7 +35,7 @@ function REQUEST:quit()
 end
 
 function REQUEST:test()
-	testhotupdate.test()
+	testhotupdate.test(self.what, self.value, self.new)
 end
 
 local function request(name, args, response)
@@ -46,17 +46,17 @@ local function request(name, args, response)
 	-- end
 end
 
-local function send_package(msgName, msgData)
-	print("send_package", msgName)
-	local msgId, encodeData = pb.PbEncode(msgName, msgData or {})
-	print("pbEncode", msgId)
-	local package = string.pack(">HI", #encodeData + 4, msgId) .. (encodeData or "")
+local function send_package(sname, data)
+	print("send_package", sname)
+	local id, msg = pb.encode(sname, data or {})
+	print("pbEncode", id)
+	local package = string.pack(">HI", #msg + 4, id) .. (msg or "")
 	print("package", #package)
-	string_to_hex(package)
+	stringToHex(package)
 	socket.write(client_fd, package)
 end
 
-function string_to_hex(str)
+function stringToHex(str)
     local hex = {}
     for i = 1, #str do
         local byte = string.byte(str, i)
@@ -78,11 +78,11 @@ skynet.register_protocol {
 	id = skynet.PTYPE_CLIENT,
 	unpack = function (msg, sz)
 		local msgStr = skynet.tostring(msg, sz)
-		string_to_hex(msgStr)
+		stringToHex(msgStr)
 		local msgId, pos = string.unpack(">I", msgStr)
 		local pbStr = safe_sub(msgStr, 5, #msgStr)
 		print("msgId", msgId, "pbStr", pbStr, "pos", pos)
-		local msgName, msgBody = pb.PbDecode(msgId, pbStr)
+		local msgName, msgBody = pb.decode(msgId, pbStr)
 		print(msgName, inspect(msgBody))
 
 		return "REQUEST", string.lower(msgName), msgBody
@@ -137,8 +137,7 @@ skynet.start(function()
 
 	local targetFile = "proto/msg.proto"
 
-    pb.LoadProtoFile(targetFile)
-    pb.ParseProtoFile(targetFile)
+    pb.load(targetFile)
 
 	skynet.dispatch("lua", function(_,_, command, ...)
 		skynet.trace()

@@ -31,10 +31,10 @@ function M:getByIndex(sheetName, indexField, idx)
     local sheet = self.t[sheetName]
     if not sheet then return end
 
-    local idxT = self.t[sheetName .. "_" .. indexField]
-    if not idxT then return end
+    local dualIdx = self.t[sheetName .. "_" .. indexField]
+    if not dualIdx then return end
 
-    local id = idxT[idx]
+    local id = dualIdx[idx]
     if not id then return end
     return sheet[id]
 end
