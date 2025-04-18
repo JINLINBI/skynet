@@ -1,8 +1,8 @@
-local skynet = require "skynet"
+local skynet = require "skynet.manager"
+local harbor = require "skynet.harbor"
 
 local M = {}
-local wokerId = 0
-local wokerReady = 0
+local workerId = 0
 local nowTs = skynet.time() * 10
 local now = (math.floor(nowTs * 10) & (2^42 - 1)) << 12
 local sequence = 0
@@ -10,16 +10,12 @@ local sequence = 0
 -- 初始化机器码（结合MAC地址与进程ID）
 local function initWorkderId()
     -- 获取本机MAC地址末两段（Skynet环境适配）
-    local mac = skynet.getenv("mac_address") or "00:00:00:00:00:00"
-    local segments = {}
-    for v in mac:gmatch("%x+") do
-        table.insert(segments, tonumber(v, 16))
+    local machineId = tonumber(skynet.getenv "machineId")
+    if not machineId or machineId == 0 then
+        skynet.error("no machineId")
+        skynet.abort()
     end
-
-    -- 生成10位机器码[3,10](@ref)
-    local len = #segments
-    wokerId = (((segments[len-1] | (2^5 - 1)) << 8) | segments[len]) % 1024
-    wokerReady = wokerId << 53
+    workerId = machineId << 53
 end
 
 -- 生成下一个ID（线程安全）
@@ -27,8 +23,17 @@ function M.nextId()
     sequence = sequence + 1
 
     -- 组合ID（Lua需用53位精度处理）
-    local id = wokerReady | (now + sequence)
+    local id = workerId | (now + sequence)
     return id
+end
+
+-- 解析ID
+function M.parseId(id)
+    return {
+        machine = (id >> 53) % 1024,
+        timestamp = (id << 11) >> (12 + 11),
+        sequence = id % 4096
+    }
 end
 
 -- 数字转换成62进制代表的短字符串
@@ -70,15 +75,6 @@ function M.shortStr2Id(str)
     end
 
     return num
-end
-
--- 解析ID
-function M.parseId(id)
-    return {
-        machine = (id >> 53) % 1024,
-        timestamp = (id << 11) >> (12 + 11),
-        sequence = id % 4096
-    }
 end
 
 

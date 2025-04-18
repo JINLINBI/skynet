@@ -5,6 +5,7 @@ thread = 8
 logger = nil
 logpath = "."
 harbor = 1
+machineId = 1 --需要小于2048
 address = "127.0.0.1:2526"
 master = "127.0.0.1:2013"
 start = "main"	-- main script
