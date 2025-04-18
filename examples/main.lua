@@ -13,6 +13,7 @@ skynet.start(function()
 	skynet.newservice("testprotobuf")
 	skynet.newservice("testplayerId")
 	skynet.newservice("testtb")
+	skynet.newservice("testversion")
 
 	local watchdog = skynet.newservice("watchdog")
 	local addr,port = skynet.call(watchdog, "lua", "start", {
