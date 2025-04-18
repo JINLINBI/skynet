@@ -12,7 +12,7 @@ skynet.start(function()
 	skynet.newservice("simpledb")
 	skynet.newservice("testprotobuf")
 	skynet.newservice("testplayerId")
-	skynet.newservice("testsharetable2")
+	skynet.newservice("testtb")
 
 	local watchdog = skynet.newservice("watchdog")
 	local addr,port = skynet.call(watchdog, "lua", "start", {
