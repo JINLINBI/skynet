@@ -1,37 +1,50 @@
-local skynet = require "skynet"
 local sharetable = require "skynet.sharetable"
+local version = require "version"
 
--- sharetable.loadfile("table/example.lua")
--- local t = sharetable.query("table/example.lua")
+local M = {
+    cacheList = {},
+}
 
-local CHECK_UPDATE_SEC = 5
-local M = {}
 M.__index = M
 
 local function checkUpdate(o, k)
-    local now = skynet.time()
-    if now - rawget(o, "last") > CHECK_UPDATE_SEC then
-        -- log_info("checkUpdate", k)
-        local filename = rawget(o, "filename")
-        log_info("update?", sharetable.update(filename))
-        rawset(o, "last", now)
+    local filename = rawget(o, "filename")
+    local ver = rawget(o, "version")
+    local newver = version.get(filename)
+    if ver ~= newver then
+        log_info("version ~= ver", version.get(filename), ver)
+        sharetable.loadfile(filename)
+        sharetable.update(filename)
+        rawset(o, "version", newver)
+        for _, cb in pairs(rawget(o, "updatecblist")) do
+            cb(rawget(o, "t"))
+        end
     end
 
     return rawget(o, "M")[k]
 end
 
 
-function M.new(filename, callback)
+function M.new(filename, updatecb)
+    local o = M.cacheList[filename]
+    if o then
+        table.insert(o.updatecblist, updatecb)
+        return M.cacheList[filename]
+    end
+
     local t = sharetable.query(filename)
     if not t then return end
 
-    local o = setmetatable({
+    o = setmetatable({
         t = t,
-        last = skynet.time(),
+        version = version.get(filename),
         filename = filename,
-        callback = callback,
+        updatecblist = {},
         M = M,
-    }, {__index = checkUpdate, __newindex = function () end})
+    }, { __index = checkUpdate, __newindex = function() end })
+
+    table.insert(o.updatecblist, updatecb)
+    M.cacheList[filename] = o
     return o
 end
 
@@ -62,9 +75,7 @@ function M:foreach(sheetName, callback)
     local sheet = self.t[sheetName]
     for _, conf in pairs(sheet) do
         local bk, ret = callback(conf)
-        if bk then
-            return ret
-        end
+        if bk then return ret end
     end
 end
 

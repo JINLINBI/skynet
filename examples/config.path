@@ -5,7 +5,6 @@ luaservice = luaservice .. root .. "test/?.lua;"
 luaservice = luaservice .. root .. "examples/?.lua;"
 luaservice = luaservice .. root .. "test/?/init.lua;"
 luaservice = luaservice .. root .. "myservice/?.lua;"
-luaservice = luaservice .. root .. "myservice/?.lua;"
 
 
 

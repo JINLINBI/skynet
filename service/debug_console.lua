@@ -6,6 +6,7 @@ local snax = require "skynet.snax"
 local memory = require "skynet.memory"
 local httpd = require "http.httpd"
 local sockethelper = require "http.sockethelper"
+local version = require "version"
 
 local arg = table.pack(...)
 assert(arg.n <= 2)
@@ -179,7 +180,7 @@ end
 
 function COMMAND.clearcache()
 	codecache.clear()
-	skynet.send("hotupdate", "lua")
+	version.update("hotupdate_ver")
 end
 
 function COMMAND.start(...)

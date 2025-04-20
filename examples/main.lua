@@ -12,11 +12,14 @@ skynet.start(function()
 	skynet.newservice("simpledb")
 	skynet.newservice("testprotobuf")
 	skynet.newservice("testplayerId")
-	skynet.newservice("testtb")
+	-- skynet.newservice("testtb")
 	skynet.newservice("testversion")
+	skynet.newservice("testconfloader")
+	skynet.newservice("testkvstore")
+	skynet.newservice("testimport")
 
 	local watchdog = skynet.newservice("watchdog")
-	local addr,port = skynet.call(watchdog, "lua", "start", {
+	local addr, port = skynet.call(watchdog, "lua", "start", {
 		port = 8888,
 		maxclient = max_client,
 		nodelay = true,

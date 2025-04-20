@@ -1,122 +1,161 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include <stdatomic.h>
+#include <stdint.h>
 #include <string.h>
-#include "spinlock.h"
-#include "atomic.h"
+#include "skynet_malloc.h"
 
-#define HASH_CAPACITY 128 // 建议使用质数如127/521
+#define HASH_CAPACITY 2039 // 使用质数减少冲突，2039（大概支持一万数据量）
+#define MAX_KEY_LEN 63
+#define INIT_VALUE 1 // 初始化version的值
 
 typedef struct HashNode
 {
-    char key[64];
-    ATOM_INT value;
-    struct HashNode *next; // 链地址法解决冲突
+    char key[MAX_KEY_LEN + 1];
+    atomic_int value;
+    atomic_uintptr_t next; // 原子指针
 } HashNode;
 
 typedef struct
 {
-    HashNode *buckets[HASH_CAPACITY];
-    struct spinlock lock;
+    atomic_uintptr_t buckets[HASH_CAPACITY]; // 原子化的桶数组
+    atomic_size_t version_counter;           // 全局版本号
 } VersionStore;
 
-static VersionStore *g_store = NULL;
+static atomic_uintptr_t g_store = 0;
 
-// 哈希函数（FNV-1a算法）
+// 内存屏障快捷方式
+#define LOAD_ACQUIRE(ptr) atomic_load_explicit(ptr, memory_order_acquire)
+#define STORE_RELEASE(ptr, val) atomic_store_explicit(ptr, val, memory_order_release)
+#define CAS_WEAK(ptr, expected, desired)                          \
+    atomic_compare_exchange_weak_explicit(ptr, expected, desired, \
+                                          memory_order_acq_rel, memory_order_acquire)
+
+// FNV-1a哈希算法
 static uint32_t hash_func(const char *key)
 {
-    
     uint32_t hash = 2166136261U;
-    int max = 64;
-    while (*key && max--)
+    for (int i = 0; i < MAX_KEY_LEN && *key; ++i)
     {
-        hash ^= (uint8_t)(*key++);
-        hash *= 16777619;
+        hash ^= (uint8_t)*key++;
+        hash *= 16777619U;
     }
     return hash % HASH_CAPACITY;
 }
 
-// 查找节点（线程安全）
+// 无锁查找
 static HashNode *hash_find(VersionStore *store, const char *key)
 {
     uint32_t idx = hash_func(key);
-    int max = 2048;
-    SPIN_LOCK(store);
-    HashNode *node = store->buckets[idx];
-    while (node && max)
+    HashNode *node = (HashNode *)LOAD_ACQUIRE(&store->buckets[idx]);
+
+    while (node)
     {
         if (strcmp(node->key, key) == 0)
             break;
-        node = node->next;
+        node = (HashNode *)LOAD_ACQUIRE(&node->next);
     }
-    SPIN_UNLOCK(store);
     return node;
 }
 
-// 插入节点（线程安全）
+// 无锁插入（带版本号的CAS）
 static HashNode *hash_insert(VersionStore *store, const char *key)
 {
     uint32_t idx = hash_func(key);
-    SPIN_LOCK(store);
-    HashNode **pp = &store->buckets[idx];
-    while (*pp)
+    HashNode *new_node = skynet_malloc(sizeof(HashNode));
+    strncpy(new_node->key, key, MAX_KEY_LEN);
+    atomic_init(&new_node->value, INIT_VALUE);
+    atomic_init(&new_node->next, 0);
+
+    atomic_uintptr_t *bucket = &store->buckets[idx];
+    uintptr_t expected = LOAD_ACQUIRE(bucket);
+
+    while (1)
     {
-        if (strcmp((*pp)->key, key) == 0)
+        // 检查是否已存在
+        HashNode *current = (HashNode *)expected;
+        while (current)
         {
-            SPIN_UNLOCK(store);
-            return *pp;
+            if (strcmp(current->key, key) == 0)
+            {
+                skynet_free(new_node);
+                return current;
+            }
+            current = (HashNode *)LOAD_ACQUIRE(&current->next);
         }
-        pp = &(*pp)->next;
-    }
-    HashNode *new_node = malloc(sizeof(HashNode));
-    strncpy(new_node->key, key, sizeof(new_node->key) - 1);
-    ATOM_INIT(&new_node->value, 1);
-    new_node->next = NULL;
-    *pp = new_node;
-    SPIN_UNLOCK(store);
-    return new_node;
-}
 
-// 初始化全局存储（仅首次加载执行）
-static void init_store(lua_State *L)
-{
-    if (!g_store)
-    {
-        g_store = (VersionStore *)lua_newuserdatauv(L, sizeof(VersionStore), 0);
-        memset(g_store, 0, sizeof(VersionStore));
-        SPIN_INIT(g_store)
+        // 尝试插入新节点
+        atomic_store(&new_node->next, expected);
+        uintptr_t desired = (uintptr_t)new_node;
+
+        if (CAS_WEAK(bucket, &expected, desired))
+        {
+            atomic_fetch_add_explicit(&store->version_counter, 1, memory_order_relaxed);
+            return new_node;
+        }
     }
 }
 
-// 获取字段版本号（原子操作）
+static VersionStore *get_store();
+// Lua API实现
 static int version_get(lua_State *L)
 {
-    const char *field = luaL_checkstring(L, 1);
-
-    HashNode *hn = hash_find(g_store, field);
-
-    lua_pushinteger(L, hn ? ATOM_LOAD(&hn->value) : 0);
-    // lua_pushinteger(L, 0);
+    const char *key = luaL_checkstring(L, 1);
+    VersionStore *store = get_store();
+    HashNode *node = hash_find(store, key);
+    lua_pushinteger(L, node ? atomic_load(&node->value) : 0);
     return 1;
 }
 
-// 递增字段版本号（线程安全）
 static int version_update(lua_State *L)
 {
-    const char *field = luaL_checkstring(L, 1);
+    const char *key = luaL_checkstring(L, 1);
+    VersionStore *store = get_store();
+    HashNode *node = hash_find(store, key);
 
-    HashNode *hn = hash_find(g_store, field);
-    if (hn)
+    if (!node)
     {
-        ATOM_FINC(&hn->value);
+        node = hash_insert(store, key);
     }
     else
     {
-        hn = hash_insert(g_store, field);
+        atomic_fetch_add(&node->value, 1);
     }
 
-    lua_pushinteger(L, ATOM_LOAD(&hn->value));
+    int num = atomic_load(&node->value);
+    lua_Integer to = luaL_optinteger(L, 2, num);
+    if (num != to)
+    {
+        lua_pushinteger(L, atomic_compare_exchange_strong(&node->value, &num, to)? to: num);
+        return 1;
+    }
+    lua_pushinteger(L, to);
     return 1;
+}
+
+// 初始化全局存储
+static void init_store()
+{
+    uintptr_t expected = 0;
+    VersionStore *new_store = skynet_malloc(sizeof(VersionStore));
+    memset(new_store, 0, sizeof(VersionStore));
+
+    // 原子CAS操作
+    if (!atomic_compare_exchange_strong(&g_store, &expected, (uintptr_t)new_store))
+    {
+        skynet_free(new_store); // 失败时释放多余内存
+    }
+}
+
+static VersionStore *get_store()
+{
+    VersionStore *store = (VersionStore *)atomic_load(&g_store);
+    if (!store)
+    {
+        init_store(); // 可能被其他线程抢占
+        store = (VersionStore *)atomic_load(&g_store);
+    }
+    return store;
 }
 
 // 注册Lua模块
@@ -127,7 +166,7 @@ static const luaL_Reg version_lib[] = {
 
 int luaopen_version(lua_State *L)
 {
-    init_store(L);
+    init_store();
     luaL_newlib(L, version_lib);
     return 1;
 }

@@ -12,7 +12,7 @@ local function initWorkderId()
     -- 获取本机MAC地址末两段（Skynet环境适配）
     local machineId = tonumber(skynet.getenv "machineId")
     if not machineId or machineId == 0 then
-        skynet.error("no machineId")
+        log_error("no machineId")
         skynet.abort()
     end
     workerId = machineId << 53
