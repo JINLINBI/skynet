@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "file.h": "c",
+        "skynet_daemon.h": "c",
+        "mutex": "c",
+        "atomic.h": "c",
+        "typeinfo": "c"
+    }
+}

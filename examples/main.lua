@@ -17,6 +17,7 @@ skynet.start(function()
 	skynet.newservice("testconfloader")
 	skynet.newservice("testkvstore")
 	skynet.newservice("testimport")
+	skynet.newservice("testetcd")
 
 	local watchdog = skynet.newservice("watchdog")
 	local addr, port = skynet.call(watchdog, "lua", "start", {
