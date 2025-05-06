@@ -11,3 +11,8 @@ _G.log_info = require("skynet").error
 _G.log_warning = require("skynet").error
 _G.log_error = require("skynet").error
 
+
+_G.DEBUG = require("skynet").error
+_G.INFO = require("skynet").error
+_G.WARNING = require("skynet").error
+_G.ERROR = require("skynet").error
