@@ -39,17 +39,17 @@ end
 
 function CMD.execute(prepare, ...)
     local stmt = stmts[prepare] or db:prepare(prepare)
-    if stmt and (not stmt.err or not stmt.errno) then
-        stmts[prepare] = stmt
+    if stmt.err or stmt.errno then
+        return stmt
     end
-
-    -- local stmt = db:prepare(prepare)
 
     local res = db:execute(stmt, ...)
     if res.errno and res.errno == 1243 then
         -- err = "Unknown prepared statement handler (3) given to mysqld_stmt_execute",
         -- errno = 1243,
         stmts[prepare] = nil
+    else
+        stmts[prepare] = stmt
     end
 
     return res
