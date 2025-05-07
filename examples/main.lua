@@ -26,8 +26,10 @@ skynet.start(function()
 	-- skynet.newservice("testkvstore")
 	-- skynet.newservice("testimport")
 	-- skynet.newservice("testetcd")
-	skynet.newservice("testluasql")
-	skynet.newservice("testredisdb")
+	-- skynet.newservice("testluasql")
+	-- skynet.newservice("testredisdb")
+	skynet.newservice("testplayerdata")
+
 	
 
 	local watchdog = skynet.newservice("watchdog")
