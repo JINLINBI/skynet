@@ -1,0 +1,45 @@
+# 拉取官方的ubuntu
+FROM ubuntu:22.04
+
+# 更新和安装必要的软件包
+COPY ./script/docker/cfg/sources.list /etc/apt/sources.list
+RUN chmod 777 /tmp && \
+    apt update -y && \
+    apt install -y --no-install-recommends \
+    apt-utils dialog procps net-tools busybox psmisc python3 mariadb-client-10.6 \
+    git git-lfs mariadb-server redis-server supervisor ftp unzip cron rsyslog gdb curl && \
+    DEBIAN_FRONTEND="noninteractive" apt install -y tzdata && \
+    apt update --fix-missing && \
+    apt install -y openssh-server --fix-missing && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# 创建必要的目录并设置符号链接
+RUN ln -s /usr/bin/python3 /usr/bin/python && \
+    mkdir -p /root/.ssh /data/game/server_remix03/script
+
+# 拷贝密钥和项目文件
+COPY ./script/docker/cfg/id_rsa ./script/docker/cfg/known_hosts /root/.ssh/
+RUN chmod 0600 /root/.ssh/id_rsa
+COPY ./bin /data/game/server_remix03/bin
+
+# 拷贝配置文件
+COPY ./script/docker/cfg/rsyncd.conf ./script/docker/cfg/rsyncd.secrets /etc/
+COPY ./script/docker/cfg/*.sh ./script/docker/start.sh /data/game/server_remix03/script/
+COPY ./script/docker/start.sh /start.sh
+
+# 设置文件权限
+RUN chmod 777 /start.sh && \
+    chmod -R 775 /data/game && \
+    chown -R root.root /data && \
+    ls -l /start.sh
+
+# 设置停止信号为 SIGINT
+STOPSIGNAL SIGINT
+
+# 设置环境变量
+ENV LD_LIBRARY_PATH=/data/game/server_remix03/bin/lib
+ENV TZ=Asia/Shanghai
+
+# 指定在容器启动时需要执行的命令
+CMD ["sh", "/start.sh"]

@@ -1,0 +1,4 @@
+# /data/logstash/config/logstash.yml
+node.name: logstash-server
+http.host: 0.0.0.0
+path.config: /usr/share/logstash/pipeline/*.conf

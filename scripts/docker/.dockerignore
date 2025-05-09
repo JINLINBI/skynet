@@ -1,0 +1,10 @@
+./bin/log/*
+./bin/test
+./bin/unittest
+./bin/run/*
+./bin/export
+bin/cfg/__pycache__
+bin/export
+bin/cfg/__init__.py
+bin/cfg/__init__.pyc
+bin/cfg_init/cfg/__init__.py

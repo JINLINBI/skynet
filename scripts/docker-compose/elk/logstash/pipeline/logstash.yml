@@ -1,0 +1,25 @@
+input {
+  beats {
+    port => 5044  # 接收 Filebeat 数据
+    codec => "json"  # 解析 JSON 格式日志
+  }
+}
+
+filter {
+  # 示例：解析 Nginx 日志（需根据实际日志格式调整）
+  grok {
+    match => { "message" => "%{COMBINEDAPACHELOG}" }
+  }
+  date {
+    match => [ "timestamp", "yyyy-MMM-dd HH:mm:ss" ]
+    target => "@timestamp"
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["elasticsearch:9200"]  # 指向 Elasticsearch 服务
+    index => "logs-%{+YYYY.MM.dd}"  # 动态索引命名
+  }
+  stdout { codec => rubydebug }  # 调试时输出到控制台
+}
