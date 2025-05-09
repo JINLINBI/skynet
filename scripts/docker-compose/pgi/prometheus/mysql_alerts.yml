@@ -1,0 +1,11 @@
+groups:
+- name: mysql_alerts
+  rules:
+  - alert: HighMySQLConnections
+    expr: mysql_global_status_threads_connected > 100
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "MySQL 连接数过高"
+      description: "当前连接数 {{ $value }}，持续超过阈值 100"

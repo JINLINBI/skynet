@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'  # 监控自身
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'influxdb'  # 监控 InfluxDB（需配合 Exporter）
+    static_configs:
+      - targets: ['influxdb:9122']  # 假设使用 InfluxDB Exporter
+
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysql_exporter:9104']  # 若跨主机需替换为 Exporter IP
+    metrics_path: /metrics
+    scheme: http
+
+rule_files:
+  - "mysql_alerts.yml"
