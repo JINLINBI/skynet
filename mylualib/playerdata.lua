@@ -2,84 +2,91 @@ local tablex = require "pl.tablex"
 local PlayerData = {}
 
 local _watch_mt = {
-    -- 注册监听回调函数
     add_listener = function(self, callback)
         table.insert(self._listeners, callback)
     end,
 
-    -- 触发数据变化事件
+    clone = function(self)
+        return tablex.deepcopy(self)
+    end,
+
+    getVersion = function (self)
+        return self._version
+    end,
+
+    -- 事件触发增加版本号追踪
     _fire_event = function(self, path, action, key, value)
-        for _, callback in ipairs(self._listeners) do
-            callback(path, action, key, value)
+        rawset(self, "_version", rawget(self, "_version") + 1)
+        for _, cb in ipairs(self._listeners) do
+            cb(path, action, key, value, self._version)
         end
     end,
 
-    -- 递归设置元表
-    _wrap_table = function(self, raw_table, parent_path)
-        if self.protected_tables[raw_table] then
-            return self.protected_tables[raw_table]
-        end
+    -- 递归包装（基于深拷贝数据）
+    _wrap_table = function(insmt, raw_table, parent_path)
+        -- 执行深度拷贝
+        local copied_table = tablex.deepcopy(raw_table)
 
-        -- 初始化时遍历现有表结构
-        for k, v in pairs(raw_table) do
-            if type(v) == "table" then
-                -- 递归包装嵌套表
-                raw_table[k] = self:_wrap_table(v, parent_path and (parent_path .. "." .. k) or k)
+        local function recursive_wrap(tbl, current_path)
+            setmetatable(tbl, {
+                __index = function(t, k)
+                    -- log_info("__index", k)
+                    return rawget(t, k) or insmt[k]
+                end,
+
+                __newindex = function(t, k, v)
+                    local old_val = rawget(t, k)
+                    local event_path = current_path .. "." .. k
+
+                    -- 旧值清理
+                    if type(old_val) == "table" then
+                        insmt:_fire_event(current_path, "DELETE", k, old_val)
+                        goto out
+                    end
+
+                    -- 新值处理
+                    if v ~= nil then
+                        if type(v) == "table" then
+                            recursive_wrap(v, event_path)
+                            insmt:_fire_event(current_path, "ADD", k, v)
+                        else
+                            insmt:_fire_event(current_path, "SET", k, v)
+                        end
+                    else
+                        insmt:_fire_event(current_path, "DELETE", k)
+                    end
+
+                    ::out::
+                    -- log_info("rawset", t, k, v)
+                    rawset(t, k, v)
+                end,
+            })
+
+            -- 递归处理子表
+            for key, val in pairs(tbl) do
+                if type(val) == "table" then
+                    recursive_wrap(val, current_path .. "." .. key)
+                end
             end
         end
 
-        -- ...其他代码...
-        local wrapped_table = setmetatable({}, {
-            __index = function(t, k)
-                return raw_table[k] or self[k]
-            end,
-
-            __newindex = function(t, k, v)
-                local current_path = parent_path and (parent_path .. "." .. k) or k
-
-                -- 旧值处理
-                local old_val = raw_table[k]
-                if type(old_val) == "table" then
-                    self:_fire_event(parent_path, "DELETE", k, old_val)
-                    if v == nil then goto out end
-                end
-
-                -- 新值处理
-                if type(v) == "table" then -- 嵌套表处理
-                    self:_fire_event(parent_path, "ADD", k, v)
-                    raw_table[k] = self:_wrap_table(v, current_path)
-                elseif v == nil then
-                    self:_fire_event(parent_path, "DELETE", k)
-                else
-                    self:_fire_event(parent_path, "SET", k, v)
-                end
-
-                ::out::
-                raw_table[k] = v
-            end,
-
-            __pairs = function()
-                return pairs(raw_table)
-            end,
-
-            __len = function(t)
-                return #raw_table
-            end
-        })
-        self.protected_tables[raw_table] = wrapped_table
-        return wrapped_table
-    end,
+        recursive_wrap(copied_table, parent_path or "root")
+        return copied_table
+    end
 }
 
 -- 创建可监听的数据结构
-function PlayerData.new(o)
-    local data = { _listeners = {}, protected_tables = {} }
-    return setmetatable(data, {
-        __index = _watch_mt,
-        __newindex = function(t, k, v)
-            _watch_mt.__newindex(t, k, v) -- 调用元方法
-        end
-    }):_wrap_table(o or {}, "root")
+function PlayerData.new(o, version)
+    local insmt = {
+        _version = version or 0,
+        _listeners = {},
+        _data_root = nil,
+    }
+
+    setmetatable(insmt, { __index = _watch_mt })
+
+    -- 初始化深拷贝并包装
+    return insmt:_wrap_table(o or {}, "root")
 end
 
 return PlayerData
