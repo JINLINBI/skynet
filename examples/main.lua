@@ -28,9 +28,8 @@ skynet.start(function()
 	-- skynet.newservice("testetcd")
 	-- skynet.newservice("testluasql")
 	-- skynet.newservice("testredisdb")
-	skynet.newservice("testplayerdata")
-
-	
+	-- skynet.newservice("testplayerdata")
+	skynet.newservice("testdatamanager")
 
 	local watchdog = skynet.newservice("watchdog")
 	local addr, port = skynet.call(watchdog, "lua", "start", {

@@ -6,50 +6,6 @@ local inspect = require "inspect"
 local bson = require "bson"
 local mysql = require "skynet.db.mysql"
 
-local function dump(obj)
-    local getIndent, quoteStr, wrapKey, wrapVal, dumpObj
-    getIndent = function(level)
-        return string.rep("\t", level)
-    end
-    quoteStr = function(str)
-        return '"' .. string.gsub(str, '"', '\\"') .. '"'
-    end
-    wrapKey = function(val)
-        if type(val) == "number" then
-            return "[" .. val .. "]"
-        elseif type(val) == "string" then
-            return "[" .. quoteStr(val) .. "]"
-        else
-            return "[" .. tostring(val) .. "]"
-        end
-    end
-    wrapVal = function(val, level)
-        if type(val) == "table" then
-            return dumpObj(val, level)
-        elseif type(val) == "number" then
-            return val
-        elseif type(val) == "string" then
-            return quoteStr(val)
-        else
-            return tostring(val)
-        end
-    end
-    dumpObj = function(obj, level)
-        if type(obj) ~= "table" then
-            return wrapVal(obj)
-        end
-        level = level + 1
-        local tokens = {}
-        tokens[#tokens + 1] = "{"
-        for k, v in pairs(obj) do
-            tokens[#tokens + 1] = getIndent(level) .. wrapKey(k) .. " = " .. wrapVal(v, level) .. ","
-        end
-        tokens[#tokens + 1] = getIndent(level - 1) .. "}"
-        return table.concat(tokens, "\n")
-    end
-    return dumpObj(obj, 0)
-end
-
 skynet.start(function()
     -- local dbserviceName = "dbservice"
     -- skynet.send(dbserviceName, "lua", "exec", "drop table if exists cats")
@@ -61,7 +17,7 @@ skynet.start(function()
 
     log_info("test luasql start")
     local res = mysqldbx.query("SELECT * FROM test;")
-    local uid0 = 240010
+    local uid0 = 250010
     local baseblob = {
         a = 1,
         b = true,
@@ -91,7 +47,11 @@ skynet.start(function()
     log_info("start test at", start)
     for i = 1, 10000 do
         local uid = uid0 + i
-        local res = mysqldbx.execute("INSERT t_role_data (uid, base, social) VALUES (?, ?, ?);", uid, skynet.packstring(baseblob), skynet.packstring(socialblob))
+        local res = mysqldbx.execute("INSERT t_role_data (uid, base, social) VALUES (?, ?, ?);", uid, 12223, skynet.packstring(socialblob))
+        if res.err or res.errno then
+            log_error("invalid execute", res.err)
+            break
+        end
         -- log_info("res", uid, inspect(res))
         
         -- local playerseri = mysqldbhelper.loaduser(uid)[1]
