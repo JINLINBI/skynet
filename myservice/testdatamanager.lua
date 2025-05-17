@@ -6,27 +6,28 @@ skynet.start(function()
     local manager = datamanager.new({
         user = {
             profile = { name = "Alice" },
-            items = {}
+            items = {},
         }
     })
 
     manager.addListener(function(event)
-        print(string.format("[v%d] %s at %s %s",
+        print(string.format("[v%d] %s at %s %s %s",
             event.version,
             event.action,
-            table.concat(event.path, "."),
-            tostring(event.param)
+            table.concat(event.paths, "."),
+            tostring(event.params[1]),
+            event.params[2] and tostring(event.params[2]) or ""
         ))
     end)
 
     -- 链式操作示例
-    manager.user.profile.update({ name = "Bob", age = 25, items = {"hello", "world", "again"}}) -- UPDATE at user.profile
-    manager.user.profile.set("name", "China")                -- UPDATE at user.profile
+    manager.user.profile.update({ name = "Bob", age = 25, items = { "hello", "world", "again" } }) -- UPDATE at user.profile
+    manager.user.profile.set("name", "China")                                                   -- UPDATE at user.profile
     -- manager.user.profile.name.delete()                       -- UPDATE at user.profile
 
-    manager.user.items.insert("sword")                      -- INSERT at user.items
-    manager.user.items.insert("shield")                     -- INSERT at user.items
-    manager.user.items.insert("done't try again")           -- INSERT at user.items
+    manager.user.items.insert("sword")            -- INSERT at user.items
+    manager.user.items.insert("shield")           -- INSERT at user.items
+    manager.user.items.insert("done't try again") -- INSERT at user.items
     manager.user.items.set("helloworld", "nihao shijie")
     manager.user.items.set("helloworld", "nihao shijie v2")
     print("manager.user.items.count", #manager.user.items)

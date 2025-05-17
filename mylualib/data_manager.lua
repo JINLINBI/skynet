@@ -1,40 +1,56 @@
 local tablex = require "pl.tablex"
-local OPERATIONS = {
-    INSERT = 1,
-    SET = 2,
-    UPDATE = 3,
-    DELETE = 4,
-    CLEAR = 5,
+local enum = require "common.enum"
+local OPERATIONS = enum.new({
+    INSERT = "insert",
+    SET = "set",
+    UPDATE = "update",
+    DELETE = "delete",
+    CLEAR = "clear",
+})
+
+local OPERATION_FUNC = {
+    [OPERATIONS.INSERT] = function(self, prev, current, paths, value)
+        if type(current) ~= "table" then
+            error("Cannot insert into non-table at path: " .. table.concat(paths, "."))
+        end
+        table.insert(current, tablex.deepcopy(value))
+        self:_triggerUpdate(OPERATIONS.INSERT, paths, #current, value)
+    end,
+    [OPERATIONS.SET] = function(self, prev, current, paths, k, v)
+        if type(current) ~= "table" then
+            error("Cannot add into non-table at path: " .. table.concat(paths, "."))
+        end
+
+        current[k] = v
+        self:_triggerUpdate(OPERATIONS.SET, paths, k, v)
+    end,
+    [OPERATIONS.UPDATE] = function(self, prev, current, paths, value)
+        prev[paths[#paths]] = tablex.deepcopy(value)
+        self:_triggerUpdate(OPERATIONS.UPDATE, paths, value)
+    end,
+    [OPERATIONS.DELETE] = function(self, prev, current, paths, ...)
+        prev[paths[#paths]] = nil
+        self:_triggerUpdate(OPERATIONS.UPDATE, paths)
+    end,
+    [OPERATIONS.CLEAR] = function(self, prev, current, paths, ...)
+        
+        self:_triggerUpdate(OPERATIONS.UPDATE, paths)
+    end,
 }
 
-local function createProxy(manager, pathSegments)
+local function createProxy(manager, paths)
     local proxy = {}
     local mt = {
         __index = function(t, key)
             -- 方法调用拦截
-            if key == "insert" then
-                return function(value)
-                    manager:_performOperation(OPERATIONS.INSERT, pathSegments, value)
-                end
-            elseif key == "set" then
-                return function(k, v)
-                    manager:_performOperation(OPERATIONS.SET, pathSegments, k, v)
-                end
-            elseif key == "update" then
-                return function(value)
-                    manager:_performOperation(OPERATIONS.UPDATE, pathSegments, value)
-                end
-            elseif key == "delete" then
-                return function()
-                    manager:_performOperation(OPERATIONS.DELETE, pathSegments)
-                end
-            elseif key == "clear" then
-                return function()
-                    manager:_performOperation(OPERATIONS.CLEAR, pathSegments)
+            local op = OPERATIONS:enum(key)
+            if op then
+                return function(value, ...)
+                    manager:_performOperation(op, paths, value, ...)
                 end
             end
 
-            local rawv = manager:_getRawDataByPath(pathSegments)
+            local rawv = manager:_getRawDataByPath(paths)
             if not rawv then --or not rawv[key] then
                 return
             end
@@ -46,7 +62,7 @@ local function createProxy(manager, pathSegments)
 
             -- print("__index", t, key)
             -- 路径追踪
-            local newPath = tablex.deepcopy(pathSegments)
+            local newPath = tablex.deepcopy(paths)
             table.insert(newPath, key)
             return createProxy(manager, newPath)
         end,
@@ -56,9 +72,9 @@ local function createProxy(manager, pathSegments)
         end,
         -- 新增遍历支持
         __pairs = function(t)
-            local rawData = manager:_getRawDataByPath(pathSegments)
+            local rawData = manager:_getRawDataByPath(paths)
             if type(rawData) ~= "table" then
-                error("Cannot iterate non-table value at path: " .. table.concat(pathSegments, "."))
+                error("Cannot iterate non-table value at path: " .. table.concat(paths, "."))
             end
 
             local function stateless_iter(tbl, k)
@@ -70,7 +86,7 @@ local function createProxy(manager, pathSegments)
                     end
 
                     local childPath = {}
-                    for _, v in ipairs(pathSegments) do table.insert(childPath, v) end
+                    for _, v in ipairs(paths) do table.insert(childPath, v) end
                     table.insert(childPath, nk)
                     return nk, createProxy(manager, childPath)
                 end
@@ -79,8 +95,8 @@ local function createProxy(manager, pathSegments)
             return stateless_iter, rawData, nil
         end,
 
-        __len = function ()
-            local rawData = manager:_getRawDataByPath(pathSegments)
+        __len = function()
+            local rawData = manager:_getRawDataByPath(paths)
             return #rawData
         end
 
@@ -142,73 +158,38 @@ function DataManager.new(initData, onChangeCallback)
     })
 end
 
-function DataManager:_performOperation(opType, pathSegments, value, value2)
-    local current = self._data
-    local prev = current
-    local path = {}
-    local param = nil
-
-    -- 遍历路径并验证
-    for _, seg in ipairs(pathSegments) do
-        table.insert(path, seg)
-        if type(current) ~= "table" then
-            error("Invalid path: " .. table.concat(path, "."))
-        end
-        prev = current
-        current = current[seg]
-    end
+function DataManager:_performOperation(opType, paths, ...)
+    local current, prev = self:_getRawDataByPath(paths)
 
     -- 执行操作
-    if opType == OPERATIONS.INSERT then
-        if type(current) ~= "table" then
-            error("Cannot insert into non-table at path: " .. table.concat(path, "."))
-        end
-        table.insert(current, tablex.deepcopy(value))
-    elseif opType == OPERATIONS.SET then
-        if type(current) ~= "table" then
-            error("Cannot add into non-table at path: " .. table.concat(path, "."))
-        end
-
-        current[value] = value2
-        param = value
-    elseif opType == OPERATIONS.UPDATE then
-        prev[path[#path]] = tablex.deepcopy(value)
-    elseif opType == OPERATIONS.DELETE then
-        prev[path[#path]] = nil
-    elseif opType == OPERATIONS.CLEAR then
-
+    local opfunc = OPERATION_FUNC[opType]
+    if opfunc then
+        opfunc(self, prev, current, paths, ...)
     end
-
-    self:_triggerUpdate(opType, pathSegments, param)
 end
 
 -- 在DataManager类中添加内部方法
-function DataManager:_getRawDataByPath(pathSegments)
+function DataManager:_getRawDataByPath(paths)
     local current = self._data
-    for _, seg in ipairs(pathSegments) do
+    local prev = current
+    for _, seg in ipairs(paths) do
         if type(current) ~= "table" then return nil end
+        prev = current
         current = current[seg]
     end
-    return current
+    return current, prev
 end
 
-local actionMap = {
-    [OPERATIONS.INSERT] = "INSERT",
-    [OPERATIONS.UPDATE] = "UPDATE",
-    [OPERATIONS.DELETE] = "DELETE",
-    [OPERATIONS.SET] = "SET",
-}
-
-function DataManager:_triggerUpdate(opType, path, param)
+function DataManager:_triggerUpdate(opType, paths, ...)
     self._version = self._version + 1
     for _, callback in ipairs(self._callbacks) do
         if type(callback) == 'function' then
             callback({
                 version = self._version,
-                action = actionMap[opType],
-                path = path,
+                action = OPERATIONS:upperValue(opType),
+                paths = paths,
                 timestamp = os.time(),
-                param = param,
+                params = {...},
             })
         end
     end
