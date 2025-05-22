@@ -1,4 +1,5 @@
 local tablex = require "pl.tablex"
+local skynet = require "skynet"
 local enum = require "common.enum"
 local OPERATIONS = enum.new({
     INSERT = "insert",
@@ -25,16 +26,19 @@ local OPERATION_FUNC = {
         self:_triggerUpdate(OPERATIONS.SET, paths, k, v)
     end,
     [OPERATIONS.UPDATE] = function(self, prev, current, paths, value)
+        if type(value) ~= "table" then
+            error("Cannot update using non-table at path: " .. table.concat(paths, "."))
+        end
         prev[paths[#paths]] = tablex.deepcopy(value)
         self:_triggerUpdate(OPERATIONS.UPDATE, paths, value)
     end,
     [OPERATIONS.DELETE] = function(self, prev, current, paths, ...)
         prev[paths[#paths]] = nil
-        self:_triggerUpdate(OPERATIONS.UPDATE, paths)
+        self:_triggerUpdate(OPERATIONS.DELETE, paths)
     end,
     [OPERATIONS.CLEAR] = function(self, prev, current, paths, ...)
-        
-        self:_triggerUpdate(OPERATIONS.UPDATE, paths)
+        tablex.clear(current)
+        self:_triggerUpdate(OPERATIONS.CLEAR, paths)
     end,
 }
 
@@ -81,12 +85,11 @@ local function createProxy(manager, paths)
                 local nk, nv = next(tbl, k)
                 if nk then
                     -- 创建子代理对象
-                    if nv and type(nv) ~= "table" then
+                    if type(nv) ~= "table" then
                         return nk, nv
                     end
 
-                    local childPath = {}
-                    for _, v in ipairs(paths) do table.insert(childPath, v) end
+                    local childPath = table.pack(table.unpack(paths))
                     table.insert(childPath, nk)
                     return nk, createProxy(manager, childPath)
                 end
@@ -99,7 +102,6 @@ local function createProxy(manager, paths)
             local rawData = manager:_getRawDataByPath(paths)
             return #rawData
         end
-
     }
     return setmetatable(proxy, mt)
 end
@@ -107,10 +109,11 @@ end
 local DataManager = {}
 DataManager.__index = DataManager
 
-function DataManager.new(initData, onChangeCallback)
+function DataManager.new(initData, version, onChangeCallback)
     local self = setmetatable({
         _data = tablex.deepcopy(initData or {}),
-        _version = 1,
+        _version = version,
+        _version_track = version,
         _callbacks = { onChangeCallback },
         _proxy = nil,
     }, DataManager)
@@ -124,12 +127,46 @@ function DataManager.new(initData, onChangeCallback)
             return tablex.deepcopy(self._data)
         end,
 
+        isDirty = function()
+            return self._version ~= self._version_track
+        end,
+
         getVersion = function()
             return self._version
         end,
 
-        setVersion = function(version)
-            self._version = version
+        setVersion = function(version_track)
+            self._version_track = version_track
+        end,
+
+        resetVersion = function(_version)
+            if _version then
+                self._version = _version
+                return
+            end
+
+            self._version = 1
+        end,
+
+        dump = function(...)
+            local rets = {}
+            local dumpall = select("#", ...)
+
+            if dumpall then
+                for name, module in pairs(self._data) do
+                    if name ~= "uid" and name ~= "id" then
+                        table.insert(rets, name)
+                        table.insert(rets, skynet.packstring(module))
+                    end
+                end
+            else
+                for _, name in ipairs({...}) do
+                    table.insert(rets, name)
+                    table.insert(rets, skynet.packstring(self._data[name] or {}))
+                end
+            end
+
+            return self._version, table.unpack(rets)
         end,
 
         addListener = function(callback)
@@ -154,8 +191,47 @@ function DataManager.new(initData, onChangeCallback)
 
         __newindex = function()
             error("Modification prohibited")
-        end
+        end,
+
+        -- 新增遍历支持
+        __pairs = function(t)
+            local function stateless_iter(tbl, k)
+                local nk, nv = next(tbl, k)
+                if nk then
+                    -- 创建子代理对象
+                    if type(nv) ~= "table" then
+                        return nk, nv
+                    end
+
+                    return nk, createProxy(self, { nk })
+                end
+            end
+
+            return stateless_iter, self._data, nil
+        end,
+
+        __len = function()
+            return #self._data
+        end,
     })
+end
+
+
+function DataManager.loadplayer(t, callback)
+    if not t or t.errno or t.err then return end
+
+    local uid = t.uid
+    local version = t.version
+    if not uid or not version then
+        return
+    end
+
+    local player = {}
+    for k, v in pairs(t) do
+        player[k] = type(v) == "string" and skynet.unpack(v) or v
+    end
+
+    return DataManager.new(player, version, callback)
 end
 
 function DataManager:_performOperation(opType, paths, ...)
@@ -188,8 +264,8 @@ function DataManager:_triggerUpdate(opType, paths, ...)
                 version = self._version,
                 action = OPERATIONS:upperValue(opType),
                 paths = paths,
-                timestamp = os.time(),
-                params = {...},
+                -- timestamp = os.time(),
+                params = { ... },
             })
         end
     end

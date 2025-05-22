@@ -8,19 +8,20 @@ skynet.start(function()
             profile = { name = "Alice" },
             items = {},
         }
-    })
+    }, 1)
 
     manager.addListener(function(event)
         print(string.format("[v%d] %s at %s %s %s",
             event.version,
             event.action,
             table.concat(event.paths, "."),
-            tostring(event.params[1]),
+            event.params[1] and tostring(event.params[1]) or "",
             event.params[2] and tostring(event.params[2]) or ""
         ))
     end)
 
     -- 链式操作示例
+    -- manager.user.profile.update("skynet")
     manager.user.profile.update({ name = "Bob", age = 25, items = { "hello", "world", "again" } }) -- UPDATE at user.profile
     manager.user.profile.set("name", "China")                                                   -- UPDATE at user.profile
     -- manager.user.profile.name.delete()                       -- UPDATE at user.profile
@@ -28,16 +29,37 @@ skynet.start(function()
     manager.user.items.insert("sword")            -- INSERT at user.items
     manager.user.items.insert("shield")           -- INSERT at user.items
     manager.user.items.insert("done't try again") -- INSERT at user.items
+    manager.user.insert("helloworld")
+    manager.user.insert("something new")
+    manager.user.set("helloworld", { adfadf = "wodefafdafd"})
+    print("pairs manager--------------")
+    for k, v in pairs(manager) do
+        -- print(k, v)
+        if type(v) == "table" then
+            for kk, vv in pairs(v) do
+                if type(vv) == "table" then
+                    vv.set("add", "addd")
+                    -- print("do vvv")
+                end
+                -- print(kk, vv)
+            end
+        end
+    end
+
+    manager.user.items.insert("sword")                      -- INSERT at user.items
+    manager.user.items.insert("shield")                     -- INSERT at user.items
+    manager.user.items.insert("done't try again")           -- INSERT at user.items
     manager.user.items.set("helloworld", "nihao shijie")
     manager.user.items.set("helloworld", "nihao shijie v2")
-    print("manager.user.items.count", #manager.user.items)
+    manager.user.items.clear()
+    print("manager.user.items.count=", #manager.user.items)
     -- manager.user.items.delete()
 
     -- manager.user.items.delete()                             -- DELETE at user.items
 
-    print("pairs manager.user.profile", manager.user.profile)
+    print("pairs manager.user.profile------------", manager.user.profile)
     for k, v in pairs(manager.user.profile) do
-        print(k, v)
+        log_info(k, v)
         if type(v) == "table" then
             for kk, vv in pairs(v) do
                 print(kk, vv)
@@ -45,18 +67,23 @@ skynet.start(function()
         end
     end
 
-    print("ipairs manager.user.profile", manager.user.profile)
+    print("ipairs manager.user.profile------------", manager.user.profile)
     for k, v in ipairs(manager.user.profile) do
         print(k, v)
     end
 
-    print("pairs manager.user.items", manager.user.items)
+    print("pairs manager.user.items------------", manager.user.items)
     for k, v in pairs(manager.user.items) do
         print(k, v)
     end
 
-    print("ipairs manager.user.items", manager.user.items)
+    print("ipairs manager.user.items------------", manager.user.items)
     for k, v in ipairs(manager.user.items) do
+        print(k, v)
+    end
+
+    print("pairs manager")
+    for k, v in pairs(manager) do
         print(k, v)
     end
 

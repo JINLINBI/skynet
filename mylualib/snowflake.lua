@@ -10,16 +10,18 @@ local sequence = 0
 -- 初始化机器码（结合MAC地址与进程ID）
 local function initWorkderId()
     -- 获取本机MAC地址末两段（Skynet环境适配）
-    local machineId = tonumber(skynet.getenv "machineId")
-    if not machineId or machineId == 0 then
-        log_error("no machineId")
-        skynet.abort()
+    local nodeId
+    while not nodeId or nodeId == 0 do
+        nodeId = tonumber(string.gmatch(skynet.getenv "node_name", "(%d+)")())
+        if not nodeId or nodeId == 0 then
+            log_error("load nodeId failed: config node_name invalid!", skynet.getenv "node_name")
+        end
     end
-    workerId = machineId << 53
+    workerId = nodeId << 53
 end
 
 -- 生成下一个ID（线程安全）
-function M.nextId()
+function M.id()
     sequence = sequence + 1
 
     -- 组合ID（Lua需用53位精度处理）

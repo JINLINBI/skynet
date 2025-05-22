@@ -42,10 +42,10 @@ settings.login_conf = {
 -- 游戏服务配置
 settings.nodes = {
 
-    gameserver1 = {
+    gameserver101 = {
         -- 网络配置
         server_no       = 1,             --服务器编号
-        node_name       = "gameserver1", --
+        node_name       = "gameserver101", --
         console_port    = 10801,         --
         host            = "0.0.0.0",     -- 需要手动修改
         gate_port_tcp   = 8888,          --(暴露 网关端口 TCP)
@@ -71,10 +71,10 @@ settings.nodes = {
         },
     },
 
-    gameserver2 = {
+    gameserver102 = {
         -- 网络配置
         server_no       = 2,             --服务器编号
-        node_name       = "gameserver2", --
+        node_name       = "gameserver102", --
         console_port    = 10801,         --
         host            = "0.0.0.0",     -- 需要手动修改
         gate_port_tcp   = 8888,          --(暴露 网关端口 TCP)

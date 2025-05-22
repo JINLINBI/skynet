@@ -9,7 +9,7 @@ skynet.start(function()
         -- user = user,
         -- password = password,
         protocol = "v3",
-        serializer ="json",  -- 默认使用json格式配置
+        serializer = "json", -- 默认使用json格式配置
         ttl = 3,
     })
 
@@ -23,7 +23,7 @@ skynet.start(function()
     local TTL = body.TTL
     log_info("TTL", TTL)
     log_info("ID", ID)
-    log_info("set hellworld", inspect(etcdCli:set("/skynet/node1", {helloworld = "niviaiiaiddkdjj"}, {lease = ID})))
+    log_info("set hellworld", inspect(etcdCli:set("/skynet/node1", { helloworld = "niviaiiaiddkdjj" }, { lease = ID })))
 
 
     -- log_info("get /skynet/node1", inspect(etcdCli:get("/skynet/node1")))
@@ -36,4 +36,19 @@ skynet.start(function()
     -- log_info("get /skynet/node1", inspect(etcdCli:get("/skynet/node1")))
     -- log_info("get /skynet/node2", inspect(etcdCli:get("/skynet/node2")))
     -- log_info("get /skynet/node", inspect(etcdCli:setx("/skynet/node", {hello = "world"}, {timeout = 3})))
+
+
+    local etcd_base_path = "/skynet/loginservers/"
+    local res, err = etcdCli:set(etcd_base_path.."hello", {message = "world"})
+	res, err = etcdCli:set(etcd_base_path.."hello2", {message = "world2"})
+	res, err = etcdCli:set(etcd_base_path.."hello3", {message = "world3"})
+	res, err = etcdCli:readdir(etcd_base_path)
+	if not res then
+		print("testreaddir fail, err: ", err)
+		return
+	end
+	print(string.format("readdir res: %s", table_dump_line(res.body.kvs)))
+	etcdCli:delete(etcd_base_path.."hello")
+	etcdCli:delete(etcd_base_path.."hello2")
+	etcdCli:delete(etcd_base_path.."hello3")
 end)

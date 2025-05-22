@@ -1,4 +1,6 @@
 local tablex = require "pl.tablex"
+local types = require "pl.types"
+local inspect = require "inspect"
 local PlayerData = {}
 
 local _watch_mt = {
@@ -6,13 +8,38 @@ local _watch_mt = {
         table.insert(self._listeners, callback)
     end,
 
+    getVersion = function (self)
+        return self._version
+    end,
+
+    -- 表操作系列方法
     clone = function(self)
         return tablex.deepcopy(self)
     end,
 
-    getVersion = function (self)
-        return self._version
+    insert = function (self, val)
+        if not types.is_writeable(self) or not types.is_iterable(self) then
+            log_error("self is not writeable", self)
+            return
+        end
+
+        table.insert(self, val)
+        return val
     end,
+
+    remove = function (self, pos)
+        pos = pos or #self
+        log_error(inspect.inspect(self))
+        log_error("remove self", self, pos, type(pos))
+        local oldval = self[pos]
+        self[pos] = nil
+        return oldval
+    end,
+
+    clear = function (self, istart)
+        tablex.clear(self, istart)
+    end,
+
 
     -- 事件触发增加版本号追踪
     _fire_event = function(self, path, action, key, value)
@@ -30,11 +57,12 @@ local _watch_mt = {
         local function recursive_wrap(tbl, current_path)
             setmetatable(tbl, {
                 __index = function(t, k)
-                    -- log_info("__index", k)
+                    log_info("__index", k)
                     return rawget(t, k) or insmt[k]
                 end,
 
                 __newindex = function(t, k, v)
+                    log_error("__newindex", t, k, v)
                     local old_val = rawget(t, k)
                     local event_path = current_path .. "." .. k
 
@@ -47,7 +75,7 @@ local _watch_mt = {
                     -- 新值处理
                     if v ~= nil then
                         if type(v) == "table" then
-                            recursive_wrap(v, event_path)
+                            v = insmt:_wrap_table(v, event_path)
                             insmt:_fire_event(current_path, "ADD", k, v)
                         else
                             insmt:_fire_event(current_path, "SET", k, v)

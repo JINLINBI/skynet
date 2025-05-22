@@ -1,15 +1,16 @@
 local skynet = require "skynet"
 local settings = require "settings"
+local inspect = require "inspect"
 
 local max_client = 64
 
 skynet.start(function()
 	-- skynet.error("Server start")
-	skynet.error("Gameserver start server")
+	-- skynet.error("Gameserver start server")
     local node_name  = skynet.getenv("node_name")
-
-    INFO("-----GameServer-----", node_name, " will begin")
-    local cfg = settings.nodes[tostring(node_name)]
+    log_info("-----GameServer-----", node_name, " will begin")
+	inspect(settings)
+    local cfg = settings.nodes[node_name]
 
 	skynet.uniqueservice("hotupdate")
 	skynet.uniqueservice("dbproxy", cfg.node_name)
@@ -29,7 +30,7 @@ skynet.start(function()
 	-- skynet.newservice("testluasql")
 	-- skynet.newservice("testredisdb")
 	-- skynet.newservice("testplayerdata")
-	skynet.newservice("testdatamanager")
+	skynet.newservice("testusermodel")
 
 	local watchdog = skynet.newservice("watchdog")
 	local addr, port = skynet.call(watchdog, "lua", "start", {
