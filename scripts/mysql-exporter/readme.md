@@ -18,7 +18,7 @@ cp mysqld_exporter /usr/local/bin/
 ## 2. ​​配置 MySQL 用户权限​​
 需在 MySQL 中创建专用监控用户并授权：
 ```shell
-CREATE USER 'exporter'@'%' IDENTIFIED BY 'your_password';
+CREATE USER 'exporter'@'%' IDENTIFIED BY '123456';
 GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
 FLUSH PRIVILEGES;
 ```

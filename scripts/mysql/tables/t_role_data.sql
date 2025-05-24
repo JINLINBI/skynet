@@ -1,0 +1,13 @@
+DROP TABLE IF EXISTS `t_role_data`;
+CREATE TABLE `t_role_data` (
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`version` INT UNSIGNED NOT NULL,
+	`uid` BIGINT(21) NOT NULL,
+	`base` BLOB,
+	`items` BLOB,
+	`shop` BLOB,
+	`social` BLOB,
+	PRIMARY KEY (`uid`),
+	UNIQUE KEY id (`id`)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT;
+

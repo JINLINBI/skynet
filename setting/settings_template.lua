@@ -44,59 +44,59 @@ settings.nodes = {
 
     gameserver101 = {
         -- 网络配置
-        server_no       = 1,             --服务器编号
+        server_no       = 1,               --服务器编号
         node_name       = "gameserver101", --
-        console_port    = 10801,         --
-        host            = "0.0.0.0",     -- 需要手动修改
-        gate_port_tcp   = 8888,          --(暴露 网关端口 TCP)
-        gate_port_ws    = 8889,          --(暴露 网关端口 WS)
+        console_port    = 10801,           --
+        host            = "0.0.0.0",       -- 需要手动修改
+        gate_port_tcp   = 8888,            --(暴露 网关端口 TCP)
+        gate_port_ws    = 8889,            --(暴露 网关端口 WS)
         gate_port_http  = 11001,
         max_client      = 6000,
         nodelay         = true,
         api_slave_count = 10,
-        dbproxy = {"mysqldb", "redisdb"},
-        redisdb_maxinst = 10,
-        redisdb_cnf = {
+        dbproxy         = { "mysqldb", "redisdb" },
+        redisdb_maxinst = 16,
+        redisdb_cnf     = {
             host = "localhost",
             port = 6379,
             db = 0,
         },
-        mysqldb_maxinst = 10,
-        mysqldb_cnf = {
+        mysqldb_maxinst = 16,
+        mysqldb_cnf     = {
             ip = "localhost",
             port = 3306,
             user = "root",
             password = "123456",
-            db = "skynet"
+            db = "gameserver_db"
         },
     },
 
     gameserver102 = {
         -- 网络配置
-        server_no       = 2,             --服务器编号
+        server_no       = 2,               --服务器编号
         node_name       = "gameserver102", --
-        console_port    = 10801,         --
-        host            = "0.0.0.0",     -- 需要手动修改
-        gate_port_tcp   = 8888,          --(暴露 网关端口 TCP)
-        gate_port_ws    = 8889,          --(暴露 网关端口 WS)
+        console_port    = 10801,           --
+        host            = "0.0.0.0",       -- 需要手动修改
+        gate_port_tcp   = 8888,            --(暴露 网关端口 TCP)
+        gate_port_ws    = 8889,            --(暴露 网关端口 WS)
         gate_port_http  = 11001,
         max_client      = 6000,
         nodelay         = true,
         api_slave_count = 10,
-        dbproxy = {"mysqldb", "redisdb"},
-        redisdb_maxinst = 10,
-        redisdb_cnf = {
+        dbproxy         = { "mysqldb", "redisdb" },
+        redisdb_maxinst = 16,
+        redisdb_cnf     = {
             host = "localhost",
             port = 6379,
             db = 0,
         },
-        mysqldb_maxinst = 10,
-        mysqldb_cnf = {
+        mysqldb_maxinst = 16,
+        mysqldb_cnf     = {
             ip = "localhost",
             port = 3306,
             user = "root",
             password = "123456",
-            db = "skynet"
+            db = "gameserver_db"
         },
     },
 }

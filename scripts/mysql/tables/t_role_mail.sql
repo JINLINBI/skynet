@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS `t_role_mail`;
+CREATE TABLE `t_role_mail` (
+	  `uid` BIGINT(21) NOT NULL,
+	  `value` MEDIUMBLOB,
+	  PRIMARY KEY (`uid`)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT;

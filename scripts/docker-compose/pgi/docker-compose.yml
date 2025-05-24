@@ -17,7 +17,7 @@ services:
 
   # InfluxDB 时序数据库
   influxdb:
-    image: influxdb:1.8
+    image: influxdb:latest
     container_name: influxdb
     ports:
       - "8086:8086"
@@ -56,10 +56,24 @@ services:
       - ./mysql-exporter/.my.cnf:/etc/mysql-exporter.cnf
     command: 
       - "--config.my-cnf=/etc/mysql-exporter.cnf"
-    environment:
-      - DATA_SOURCE_NAME=exporter:123456@mysql_host:3306/
+    # environment:
+    #   - DATA_SOURCE_NAME=exporter:123456@198.18.0.1:3306/
     networks:
       - monitoring
+
+  # InfluxDB 指标采集器
+  influxdb-exporter:
+    image: prom/influxdb-exporter:latest
+    container_name: influxdb-exporter
+    ports:
+      - "9122:9122"
+    environment:
+      INFLUXDB_URL: "http://influxdb:8086"
+      INFLUXDB_USER: "admin"
+      INFLUXDB_PASSWORD: "admin123"
+    networks:
+      - monitoring
+    restart: unless-stopped
 
 # 网络与存储卷配置
 networks:
