@@ -18,7 +18,7 @@ function EnumClass.new(nameTable, defaultName)
     for k, v in pairs(nameTable) do
         self._reverseNameTable[v] = k
         self._upperNameTable[k] = string.upper(v)
-        self._reverseNameTable[k] = string.lower(v)
+        self._lowerNameTable[k] = string.lower(v)  -- 修复：使用 _lowerNameTable 而不是 _reverseNameTable
         table.insert(ks, k)
     end
 
@@ -46,7 +46,7 @@ end
 function EnumClass:value(k_or_enum)
     local k = self._idx2k[k_or_enum]
     if not k then k = k_or_enum end
-    return self._nameTable[k_or_enum] or self._defaultName
+    return self._nameTable[k] or self._defaultName
 end
 
 function EnumClass:upperValue(k_or_enum)

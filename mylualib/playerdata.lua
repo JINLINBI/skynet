@@ -29,8 +29,11 @@ local _watch_mt = {
 
     remove = function (self, pos)
         pos = pos or #self
-        log_error(inspect.inspect(self))
-        log_error("remove self", self, pos, type(pos))
+        if not types.is_writeable(self) or not types.is_iterable(self) then
+            log_error("self is not writeable or iterable", self)
+            return
+        end
+
         local oldval = self[pos]
         self[pos] = nil
         return oldval
@@ -57,12 +60,10 @@ local _watch_mt = {
         local function recursive_wrap(tbl, current_path)
             setmetatable(tbl, {
                 __index = function(t, k)
-                    log_info("__index", k)
                     return rawget(t, k) or insmt[k]
                 end,
 
                 __newindex = function(t, k, v)
-                    log_error("__newindex", t, k, v)
                     local old_val = rawget(t, k)
                     local event_path = current_path .. "." .. k
 
@@ -85,7 +86,6 @@ local _watch_mt = {
                     end
 
                     ::out::
-                    -- log_info("rawset", t, k, v)
                     rawset(t, k, v)
                 end,
             })

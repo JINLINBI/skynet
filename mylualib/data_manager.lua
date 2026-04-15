@@ -64,9 +64,11 @@ local function createProxy(manager, paths)
                 return v
             end
 
-            -- print("__index", t, key)
-            -- 路径追踪
-            local newPath = tablex.deepcopy(paths)
+            -- 路径追踪 - 优化：避免不必要的深拷贝
+            local newPath = {}
+            for i = 1, #paths do
+                newPath[i] = paths[i]
+            end
             table.insert(newPath, key)
             return createProxy(manager, newPath)
         end,
@@ -89,7 +91,11 @@ local function createProxy(manager, paths)
                         return nk, nv
                     end
 
-                    local childPath = table.pack(table.unpack(paths))
+                    -- 优化：避免 table.pack/unpack 开销
+                    local childPath = {}
+                    for i = 1, #paths do
+                        childPath[i] = paths[i]
+                    end
                     table.insert(childPath, nk)
                     return nk, createProxy(manager, childPath)
                 end
@@ -174,7 +180,11 @@ function DataManager.new(initData, version, onChangeCallback)
         end,
 
         removeListener = function(callback)
-            tablex.removeValues(callback)
+            for i = #self._callbacks, 1, -1 do
+                if self._callbacks[i] == callback then
+                    table.remove(self._callbacks, i)
+                end
+            end
         end
     }
 

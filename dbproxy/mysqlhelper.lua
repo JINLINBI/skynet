@@ -20,15 +20,28 @@ local function splitModelnameAndData(...)
 end
 
 function M.loaduser(uid)
+    if not uid then
+        log_error("loaduser failed: uid is nil")
+        return { err = "Invalid uid" }
+    end
     local prepare = string.format("SELECT * FROM `t_role_data` WHERE uid = ? LIMIT 1")
     return mysqldbx.execute(prepare, uid)
 end
 
 function M.saveuser(uid, version, modelname, modeldata, ...)
+    if not uid then
+        log_error("saveuser failed: uid is nil")
+        return { err = "Invalid uid" }
+    end
+    if not version then
+        log_error("saveuser failed: version is nil")
+        return { err = "Invalid version" }
+    end
+
     local len = select("#", modelname, modeldata, ...)
     if len == 0 or (len % 2 ~= 0) then
-        log_error("newuser failed: modelname not match modeldata", len)
-        return
+        log_error("saveuser failed: modelname not match modeldata", len)
+        return { err = "Invalid parameters" }
     end
 
     local fieldnames, datas = splitModelnameAndData(modelname, modeldata, ...)
@@ -40,15 +53,24 @@ function M.saveuser(uid, version, modelname, modeldata, ...)
     log_debug("prepare statement", prepare)
     table.insert(datas, uid)
     local ret = mysqldbx.execute(prepare, table.unpack(datas))
-    log_debug("new user ret", ret)
+    log_debug("save user ret", ret)
     return ret
 end
 
 function M.newuser(uid, version, modelname, modeldata, ...)
+    if not uid then
+        log_error("newuser failed: uid is nil")
+        return { err = "Invalid uid" }
+    end
+    if not version then
+        log_error("newuser failed: version is nil")
+        return { err = "Invalid version" }
+    end
+
     local len = select("#", modelname, modeldata, ...)
     if len == 0 or (len % 2 ~= 0) then
         log_error("newuser failed: modelname not match modeldata", len)
-        return
+        return { err = "Invalid parameters" }
     end
 
     local fieldnames, datas = splitModelnameAndData(modelname, modeldata, ...)
