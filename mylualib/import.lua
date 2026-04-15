@@ -9,8 +9,8 @@ local enableHotUpdate = skynet.getenv("autohotupdated") or false
 local M = {}
 
 local ImportCache = {}
-local IMPORT_CHECK_SEC = 1 * 100 -- 0.5秒检测一次
-local DEALY_IMPORT_SEC = 3 * 100 -- 3秒延迟加载
+local IMPORT_CHECK_SEC = 100 -- 1秒检测一次（优化：从0.5秒改为1秒）
+local DEALY_IMPORT_SEC = 300 -- 3秒延迟加载
 
 local function IndexFunction(t, k)
     local mod = rawget(t, "mod")
@@ -32,7 +32,7 @@ else
 
         local realmod = require(filename)
         if not realmod then
-            log_error("import not founded !!!!!!!!!!!!!!!!!")
+            log_error("import not founded:", filename)
             return realmod
         end
 

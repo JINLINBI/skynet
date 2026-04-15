@@ -7,6 +7,16 @@ local nowTs = skynet.time() * 10
 local now = (math.floor(nowTs * 10) & (2^42 - 1)) << 12
 local sequence = 0
 
+-- 字符集缓存
+local charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+local charset_len = #charset
+local char_to_index = {}
+
+-- 初始化字符映射表
+for i = 1, charset_len do
+    char_to_index[charset:sub(i, i)] = i - 1
+end
+
 -- 初始化机器码（结合MAC地址与进程ID）
 local function initWorkderId()
     -- 获取本机MAC地址末两段（Skynet环境适配）
@@ -38,22 +48,19 @@ function M.parseId(id)
     }
 end
 
--- 数字转换成62进制代表的短字符串
-local charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+-- 数字转换成62进制代表的短字符串（优化版）
 function M.id2ShortStr(num)
-    local base = #charset  -- 62 characters in the charset
-    local result = {}
-
     -- Handle zero explicitly
     if num == 0 then
         return charset:sub(1, 1)  -- '0'
     end
 
+    local result = {}
     -- Convert the number to base 62
     while num > 0 do
-        local remainder = (num % base) + 1  -- Lua index starts at 1
+        local remainder = (num % charset_len) + 1  -- Lua index starts at 1
         table.insert(result, 1, charset:sub(remainder, remainder))
-        num = num // base
+        num = num // charset_len
     end
 
     -- Combine the table into a single string
@@ -61,19 +68,11 @@ function M.id2ShortStr(num)
 end
 
 function M.shortStr2Id(str)
-    local base = #charset  -- 62 characters in the charset
     local num = 0
-
-    -- Create a lookup table to map characters to their positions in the charset
-    local char_to_index = {}
-    for i = 1, base do
-        char_to_index[charset:sub(i, i)] = i - 1  -- Store index as 0-based
-    end
-
     -- Convert the short string back to a number
     for i = 1, #str do
         local char = str:sub(i, i)
-        num = num * base + char_to_index[char]
+        num = num * charset_len + char_to_index[char]
     end
 
     return num

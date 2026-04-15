@@ -73,6 +73,8 @@ end
 
 function M:foreach(sheetName, callback)
     local sheet = self.t[sheetName]
+    if not sheet then return end
+
     for _, conf in pairs(sheet) do
         local bk, ret = callback(conf)
         if bk then return ret end
